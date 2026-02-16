@@ -1,0 +1,1 @@
+Na dinâmica "Troca de Grupos", os estudantes analisaram a pilha de cubos construída por uma equipe vizinha. Utilizando a Ficha 10, desenharam as seis vistas ortogonais do modelo alheio. O objetivo foi testar a leitura espacial de um objeto externo e promover a validação cruzada das representações.
