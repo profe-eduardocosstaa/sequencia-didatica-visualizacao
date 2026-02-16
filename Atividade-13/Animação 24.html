@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Rotação 3D - Cubo Transparente (Final + Seta)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            background: #1e1e2e;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 { text-align: center; margin-bottom: 10px; font-size: 1.5rem; color: #fff; }
+        .display-area {
+            position: relative;
+            height: 500px;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+        #canvas3d { width: 100%; height: 100%; display: block; }
+        .indicator-box {
+            position: absolute; top: 15px; padding: 5px 10px; border-radius: 5px;
+            font-size: 12px; pointer-events: none; font-weight: bold; background: rgba(0,0,0,0.7);
+        }
+        #camIndicator { left: 15px; color: #00b894; border: 1px solid #00b894; }
+        #zoomIndicator { right: 15px; color: #fab1a0; border: 1px solid #fab1a0; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .control-group {
+            background: #2d2d44; padding: 15px; border-radius: 10px;
+            border: 1px solid #444; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        h3 { font-size: 0.9rem; color: #b3b3b3; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px;}
+        .axis-option {
+            display: flex; align-items: center; margin: 5px 0; padding: 8px;
+            border-radius: 6px; cursor: pointer; transition: background 0.2s; background: rgba(255,255,255,0.05);
+        }
+        .axis-option:hover { background: rgba(255,255,255,0.1); }
+        .axis-option input { margin-right: 10px; }
+        .color-indicator { width: 12px; height: 12px; border-radius: 50%; margin-right: 10px; display: inline-block;}
+        select, input[type="number"] { width: 100%; padding: 10px; background: #1e1e2e; border: 1px solid #555; color: white; border-radius: 5px; margin-bottom: 10px; }
+        .btn-group { display: flex; gap: 5px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; opacity: 0.9; font-size: 0.9rem; }
+        button:hover { opacity: 1; transform: translateY(-1px); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; background-color: #555 !important; color: #888;}
+        .angle-btn { background: #3742fa; } .angle-btn:hover { background: #5352ed; }
+        #btn-animate { width: 100%; background-color: #00b894; font-size: 1.1rem; padding: 12px; }
+        #btn-camera { width: 100%; background-color: #6c5ce7; margin-bottom: 5px; }
+        #btn-reset { width: 100%; background-color: #e17055; margin-top: 5px; }
+        .action-group { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 10px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Rotação 3D - Cubo Transparente</h1>
+    <div class="display-area">
+        <div class="indicator-box" id="camIndicator">Modo: Perspectiva</div>
+        <div class="indicator-box" id="zoomIndicator">Zoom: 100%</div>
+        <canvas id="canvas3d"></canvas>
+    </div>
+    <div class="controls">
+        <div class="control-group">
+            <h3>1. Eixo Visível</h3>
+            <label class="axis-option"><input type="radio" name="axis" value="none" checked onclick="updateAxis()"> <span>Nenhum</span></label>
+            <label class="axis-option"><input type="radio" name="axis" value="x" onclick="updateAxis()"> <span class="color-indicator" style="background:#ff4757;"></span>Eixo X</label>
+            <label class="axis-option"><input type="radio" name="axis" value="y" onclick="updateAxis()"> <span class="color-indicator" style="background:#2ed573;"></span>Eixo Y</label>
+            <label class="axis-option"><input type="radio" name="axis" value="z" onclick="updateAxis()"> <span class="color-indicator" style="background:#1e90ff;"></span>Eixo Z</label>
+            <label class="axis-option"><input type="radio" name="axis" value="diag" onclick="updateAxis()"> <span class="color-indicator" style="background:#ffa502;"></span>Diagonal</label>
+        </div>
+        <div class="control-group">
+            <h3>2. Parâmetros</h3>
+            <select id="directionSelect">
+                <option value="1">Sentido Anti-horário (+)</option>
+                <option value="-1">Sentido Horário (-)</option>
+            </select>
+            <div class="btn-group">
+                <button class="angle-btn" onclick="setAngle(90)">90°</button>
+                <button class="angle-btn" onclick="setAngle(180)">180°</button>
+                <button class="angle-btn" onclick="setAngle(270)">270°</button>
+                <button class="angle-btn" onclick="setAngle(360)">360°</button>
+            </div>
+            <input type="number" id="angleInput" value="90" placeholder="Graus">
+        </div>
+        <div class="control-group" style="justify-content: center;">
+            <button id="btn-animate" onclick="startRotation()">ROTACIONAR</button>
+            <button id="btn-camera" onclick="toggleCamera()">📷 Mudar Câmera</button>
+            <button id="btn-reset" onclick="resetCube()">📍 Posição Inicial</button>
+        </div>
+    </div>
+</div>
+<script>
+    let scene, renderer, controls;
+    let perspectiveCamera, orthoCamera, activeCamera;
+    let cubeGroup;
+    let axisMeshes = {}; 
+    let isAnimating = false, totalRotationToPerform = 0, rotationStep = 0;
+    let currentRotationAxis = null;
+    let isOrthographic = false;
+    
+    const initialCameraPos = { x: 5, y: 4, z: 6 };
+    const initialDistance = Math.sqrt(initialCameraPos.x**2 + initialCameraPos.y**2 + initialCameraPos.z**2);
+    const frustumSize = 8;
+
+    const camIndicator = document.getElementById('camIndicator');
+    const zoomIndicator = document.getElementById('zoomIndicator');
+    const btnAction = document.getElementById('btn-animate');
+
+    init();
+    animate();
+
+    function init() {
+        const canvas = document.getElementById('canvas3d');
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x121212);
+
+        perspectiveCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+        perspectiveCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+
+        orthoCamera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+        orthoCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+
+        activeCamera = perspectiveCamera;
+
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.shadowMap.enabled = true;
+
+        controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.addEventListener('change', updateZoomDisplay);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 10, 10);
+        scene.add(dirLight);
+
+        // CUBO
+        cubeGroup = new THREE.Group();
+        const geometry = new THREE.BoxGeometry(2, 2, 2);
+        
+        // CORREÇÃO DE MATERIAL: Usar Standard em vez de Physical para garantir visibilidade sem envMap
+        const glassMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x81ecec, 
+            roughness: 0.1, 
+            opacity: 0.3, 
+            transparent: true, 
+            side: THREE.DoubleSide 
+        });
+        
+        const cube = new THREE.Mesh(geometry, glassMaterial);
+        cubeGroup.add(cube);
+
+        const edges = new THREE.EdgesGeometry(geometry);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+        const wireframe = new THREE.LineSegments(edges, lineMat);
+        cubeGroup.add(wireframe);
+
+        const letters = [
+            { text: 'A', pos: [1.01, 0, 0], rot: [0, Math.PI/2, 0] }, { text: 'B', pos: [-1.01, 0, 0], rot: [0, -Math.PI/2, 0] },
+            { text: 'C', pos: [0, 1.01, 0], rot: [-Math.PI/2, 0, 0] }, { text: 'D', pos: [0, -1.01, 0], rot: [Math.PI/2, 0, 0] },
+            { text: 'E', pos: [0, 0, 1.01], rot: [0, 0, 0] }, { text: 'F', pos: [0, 0, -1.01], rot: [0, Math.PI, 0] }
+        ];
+        letters.forEach(info => {
+            const texture = createTextTexture(info.text);
+            const planeGeo = new THREE.PlaneGeometry(1.6, 1.6);
+            const planeMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.position.set(...info.pos); plane.rotation.set(...info.rot);
+            cubeGroup.add(plane);
+        });
+        scene.add(cubeGroup);
+
+        // Eixos
+        axisMeshes['x'] = createAxisCylinder(new THREE.Vector3(1,0,0), 0xff4757);
+        axisMeshes['y'] = createAxisCylinder(new THREE.Vector3(0,1,0), 0x2ed573);
+        axisMeshes['z'] = createAxisCylinder(new THREE.Vector3(0,0,1), 0x1e90ff);
+        axisMeshes['diag'] = createAxisCylinder(new THREE.Vector3(1,1,1).normalize(), 0xffa502);
+
+        createFrontArrow(); // Seta
+
+        const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+        scene.add(gridHelper);
+
+        window.addEventListener('resize', onWindowResize);
+        updateZoomDisplay();
+    }
+
+    function createFrontArrow() {
+        const arrowLen = 2.5; const arrowCol = 0xaaaaaa; 
+        const dir = new THREE.Vector3(0, 0, -1); 
+        const origin = new THREE.Vector3(0, 0.05, 4.5); 
+        const arrowHelper = new THREE.ArrowHelper(dir, origin, arrowLen, arrowCol, 0.6, 0.4);
+        scene.add(arrowHelper);
+
+        const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 64;
+        ctx.font = "Bold 40px Arial"; ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.fillText("FRENTE", 128, 40);
+        const texture = new THREE.CanvasTexture(canvas);
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+        sprite.position.set(0, 0.6, 5); sprite.scale.set(2, 0.5, 1);
+        scene.add(sprite);
+    }
+
+    function createAxisCylinder(direction, color) {
+        const length = 30; const thickness = 0.08;
+        const geometry = new THREE.CylinderGeometry(thickness, thickness, length, 16);
+        const material = new THREE.MeshBasicMaterial({ color: color });
+        const cylinder = new THREE.Mesh(geometry, material);
+        const upVector = new THREE.Vector3(0, 1, 0);
+        cylinder.quaternion.setFromUnitVectors(upVector, direction.clone().normalize());
+        cylinder.visible = false; 
+        scene.add(cylinder);
+        return cylinder;
+    }
+
+    function createTextTexture(text) {
+        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+        const ctx = canvas.getContext('2d'); ctx.fillStyle = "rgba(0,0,0,0)"; ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = "white"; ctx.lineWidth = 10; ctx.strokeRect(10, 10, 236, 236);
+        ctx.font = "bold 150px Arial"; ctx.fillStyle = "white"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, 128, 128);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function updateAxis() {
+        if (isAnimating) return;
+        const selected = document.querySelector('input[name="axis"]:checked').value;
+        for (const key in axisMeshes) { if(axisMeshes[key]) axisMeshes[key].visible = false; }
+        if (selected !== 'none' && axisMeshes[selected]) { axisMeshes[selected].visible = true; }
+    }
+
+    function setAngle(val) { document.getElementById('angleInput').value = val; }
+
+    function resetCube() {
+        if (isAnimating) return;
+        cubeGroup.rotation.set(0, 0, 0); cubeGroup.quaternion.set(0, 0, 0, 1);
+        activeCamera = perspectiveCamera; isOrthographic = false; controls.object = activeCamera;
+        activeCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+        activeCamera.lookAt(0, 0, 0); controls.target.set(0, 0, 0);
+        camIndicator.innerText = "Modo: Perspectiva"; camIndicator.style.borderColor = "#00b894"; camIndicator.style.color = "#00b894";
+        if (isOrthographic) { activeCamera.zoom = 1; activeCamera.updateProjectionMatrix(); }
+        controls.update(); updateZoomDisplay(); updateAxis();
+    }
+
+    function toggleCamera() {
+        isOrthographic = !isOrthographic;
+        const currentPos = activeCamera.position.clone(); const currentTarget = controls.target.clone();
+        activeCamera = isOrthographic ? orthoCamera : perspectiveCamera;
+        activeCamera.position.copy(currentPos); activeCamera.lookAt(currentTarget);
+        controls.object = activeCamera; controls.update();
+        camIndicator.innerText = isOrthographic ? "Modo: Ortogonal" : "Modo: Perspectiva";
+        camIndicator.style.borderColor = isOrthographic ? "#ff7675" : "#00b894";
+        camIndicator.style.color = isOrthographic ? "#ff7675" : "#00b894";
+        if(isOrthographic) { activeCamera.zoom = 1; activeCamera.updateProjectionMatrix(); }
+        updateZoomDisplay();
+    }
+
+    function updateZoomDisplay() {
+        let zoomPercentage = 100;
+        if (isOrthographic) { zoomPercentage = Math.round(activeCamera.zoom * 100); }
+        else {
+            const currentDistance = activeCamera.position.distanceTo(controls.target);
+            if (currentDistance > 0) zoomPercentage = Math.round((initialDistance / currentDistance) * 100);
+        }
+        zoomIndicator.innerText = `Zoom: ${zoomPercentage}%`;
+    }
+
+    function startRotation() {
+        if (isAnimating) return;
+        const selectedAxis = document.querySelector('input[name="axis"]:checked').value;
+        if (selectedAxis === 'none') { alert("Selecione um Eixo."); return; }
+        const angleDeg = parseFloat(document.getElementById('angleInput').value);
+        const direction = parseFloat(document.getElementById('directionSelect').value);
+        
+        let vectorAxis;
+        if (selectedAxis === 'x') vectorAxis = new THREE.Vector3(1, 0, 0);
+        else if (selectedAxis === 'y') vectorAxis = new THREE.Vector3(0, 1, 0);
+        else if (selectedAxis === 'z') vectorAxis = new THREE.Vector3(0, 0, 1);
+        else if (selectedAxis === 'diag') vectorAxis = new THREE.Vector3(1, 1, 1).normalize();
+
+        const totalRad = (angleDeg * Math.PI / 180) * direction;
+        totalRotationToPerform = totalRad;
+        rotationStep = (0.05) * Math.sign(totalRad); 
+        currentRotationAxis = vectorAxis;
+        isAnimating = true;
+        btnAction.disabled = true;
+    }
+
+    function animateRotationStep() {
+        if (!isAnimating) return;
+        let remaining = Math.abs(totalRotationToPerform);
+        let step = Math.abs(rotationStep);
+        if (remaining <= step) {
+            const qStep = new THREE.Quaternion(); qStep.setFromAxisAngle(currentRotationAxis, totalRotationToPerform);
+            cubeGroup.quaternion.premultiply(qStep);
+            isAnimating = false; btnAction.disabled = false; totalRotationToPerform = 0;
+        } else {
+            const qStep = new THREE.Quaternion(); qStep.setFromAxisAngle(currentRotationAxis, rotationStep);
+            cubeGroup.quaternion.premultiply(qStep);
+            totalRotationToPerform -= rotationStep;
+        }
+    }
+
+    function onWindowResize() {
+        const canvas = document.getElementById('canvas3d');
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        perspectiveCamera.aspect = aspect; perspectiveCamera.updateProjectionMatrix();
+        orthoCamera.left = -frustumSize * aspect / 2; orthoCamera.right = frustumSize * aspect / 2;
+        orthoCamera.top = frustumSize / 2; orthoCamera.bottom = -frustumSize / 2;
+        orthoCamera.updateProjectionMatrix();
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        updateZoomDisplay();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if(isAnimating) animateRotationStep();
+        controls.update();
+        renderer.render(scene, activeCamera);
+    }
+
+    init();
+</script>
+</body>
+</html>

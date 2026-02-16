@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotação 3D - A Escada (Final + Zoom)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            background: #1e1e2e;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            max-width: 1000px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 { text-align: center; margin-bottom: 10px; font-size: 1.5rem; color: #fff; }
+        .display-area {
+            position: relative;
+            height: 500px;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+        #canvas3d { width: 100%; height: 100%; display: block; }
+        .indicator-box {
+            position: absolute; top: 15px; padding: 5px 10px; border-radius: 5px;
+            font-size: 12px; pointer-events: none; font-weight: bold; background: rgba(0,0,0,0.7);
+        }
+        #camIndicator { left: 15px; color: #00b894; border: 1px solid #00b894; }
+        #zoomIndicator { right: 15px; color: #fab1a0; border: 1px solid #fab1a0; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .control-group {
+            background: #2d2d44; padding: 15px; border-radius: 10px;
+            border: 1px solid #444; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        h3 { font-size: 0.9rem; color: #b3b3b3; margin-bottom: 10px; text-transform: uppercase; text-align: center; letter-spacing: 1px;}
+        .btn-group { display: flex; gap: 5px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap; }
+        button {
+            padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer;
+            font-weight: bold; transition: 0.2s; color: white; opacity: 0.9; font-size: 0.9rem;
+        }
+        button:hover { opacity: 1; transform: translateY(-1px); filter: brightness(1.1); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; background-color: #555 !important; color: #888;}
+        
+        #btnAxisX { background-color: #ff4757; }
+        #btnAxisY { background-color: #2ed573; }
+        #btnAxisZ { background-color: #1e90ff; }
+        #btnAxisNone { background-color: #636e72; color: #dfe6e9; } 
+        .btn-dir { background-color: #5352ed; }
+        .btn-angle { background-color: #3742fa; }
+        #btn-camera { width: 100%; background-color: #6c5ce7; margin-bottom: 5px; box-shadow: 0 4px 0 #4834d4; }
+        #btn-camera:active { transform: translateY(2px); box-shadow: none; }
+        #btn-reset { width: 100%; background-color: #e17055; margin-top: 5px; box-shadow: 0 4px 0 #d35400; }
+        #btn-reset:active { transform: translateY(2px); box-shadow: none; }
+        button.active-axis { background-color: #ffffff !important; color: #000 !important; border: 2px solid #fff; opacity: 1; }
+        button.active-dir, button.active-angle { background-color: #ffffff !important; color: #000 !important; border: 2px solid #5352ed; opacity: 1; }
+        .action-group { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 10px; }
+        #btnAction {
+            background-color: #00b894; color: white; font-size: 1.2rem; padding: 15px 40px;
+            width: 100%; max-width: 400px; border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0, 184, 148, 0.3); text-transform: uppercase; letter-spacing: 1px;
+        }
+        #btnAction:hover:not(:disabled) { background-color: #00a884; transform: scale(1.02); box-shadow: 0 6px 20px rgba(0, 184, 148, 0.5); }
+        #btnAction:disabled { background-color: #444; box-shadow: none; cursor: not-allowed; color: #888; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Rotação 3D: A Escada (Pódio)</h1>
+    <div class="display-area">
+        <div class="indicator-box" id="camIndicator">Modo: Perspectiva</div>
+        <div class="indicator-box" id="zoomIndicator">Zoom: 100%</div>
+        <canvas id="canvas3d"></canvas>
+    </div>
+    <div class="controls">
+        <div class="control-group">
+            <h3>1. Eixo</h3>
+            <div class="btn-group">
+                <button id="btnAxisX" onclick="selectAxis('x')">X</button>
+                <button id="btnAxisY" onclick="selectAxis('y')">Y</button>
+                <button id="btnAxisZ" onclick="selectAxis('z')">Z</button>
+                <button id="btnAxisNone" onclick="selectAxis('none')">Nenhum</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>2. Direção</h3>
+            <div class="btn-group">
+                <button class="btn-dir" id="btnCW" onclick="selectDirection(-1)" disabled>Horário ↻</button>
+                <button class="btn-dir" id="btnCCW" onclick="selectDirection(1)" disabled>Anti-horário ↺</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>3. Ângulo</h3>
+            <div class="btn-group">
+                <button class="btn-angle" onclick="selectAngle(45)" disabled>45°</button>
+                <button class="btn-angle" onclick="selectAngle(90)" disabled>90°</button>
+                <button class="btn-angle" onclick="selectAngle(180)" disabled>180°</button>
+                <button class="btn-angle" onclick="selectAngle(360)" disabled>360°</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>Ferramentas</h3>
+            <button id="btn-camera" onclick="toggleCamera()">📷 Mudar Câmera</button>
+            <button id="btn-reset" onclick="resetScene()">📍 Posição Inicial</button>
+        </div>
+        <div class="action-group">
+            <button id="btnAction" onclick="executeRotation()" disabled>ROTACIONAR</button>
+        </div>
+    </div>
+</div>
+<script>
+    let scene, renderer, controls;
+    let perspectiveCamera, orthoCamera, activeCamera;
+    let stairsGroup, axesGroup;
+    let axisMeshes = {};
+    
+    const initialCameraPos = { x: 6, y: 6, z: 8 };
+    const initialDistance = Math.sqrt(initialCameraPos.x**2 + initialCameraPos.y**2 + initialCameraPos.z**2);
+    const frustumSize = 12;
+    
+    let selectedAxisName = null;
+    let selectedAxisVector = null;
+    let selectedDirectionSign = 0;
+    let selectedAngle = 0;
+    let isOrthographic = false;
+    let isAnimating = false;
+    let totalRotationToPerform = 0;
+    let rotationStep = 0;
+    
+    const btnsAxis = [document.getElementById('btnAxisX'), document.getElementById('btnAxisY'), document.getElementById('btnAxisZ'), document.getElementById('btnAxisNone')];
+    const btnsDir = [document.getElementById('btnCW'), document.getElementById('btnCCW')];
+    const btnsAngle = document.querySelectorAll('.btn-angle');
+    const btnAction = document.getElementById('btnAction');
+    const camIndicator = document.getElementById('camIndicator');
+    const zoomIndicator = document.getElementById('zoomIndicator');
+
+    init();
+    animate();
+
+    function init() {
+        const canvas = document.getElementById('canvas3d');
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x121212);
+
+        perspectiveCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+        perspectiveCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+
+        orthoCamera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+        orthoCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+
+        activeCamera = perspectiveCamera;
+
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        renderer.shadowMap.enabled = true;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        controls = new THREE.OrbitControls(activeCamera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.addEventListener('change', updateZoomDisplay);
+
+        createStairs();
+        createCustomAxes();
+        createFrontArrow(); // Seta
+        
+        const gridHelper = new THREE.GridHelper(10, 10, 0x555555, 0x333333);
+        scene.add(gridHelper);
+
+        window.addEventListener('resize', onWindowResize);
+        updateZoomDisplay();
+    }
+
+    function createFrontArrow() {
+        const arrowLen = 2;
+        const arrowCol = 0xaaaaaa; 
+        const dir = new THREE.Vector3(0, 0, -1); 
+        const origin = new THREE.Vector3(0, 0.05, 4); 
+        const arrowHelper = new THREE.ArrowHelper(dir, origin, arrowLen, arrowCol, 0.5, 0.3);
+        scene.add(arrowHelper);
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 256; canvas.height = 64;
+        ctx.font = "Bold 40px Arial";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.fillText("FRENTE", 128, 40);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const spriteMat = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.position.set(0, 0.5, 4.5); 
+        sprite.scale.set(2, 0.5, 1);
+        scene.add(sprite);
+    }
+
+    function updateZoomDisplay() {
+        let zoomPercentage = 100;
+        if (isOrthographic) {
+            zoomPercentage = Math.round(activeCamera.zoom * 100);
+        } else {
+            const currentDistance = activeCamera.position.distanceTo(controls.target);
+            if (currentDistance > 0) {
+                zoomPercentage = Math.round((initialDistance / currentDistance) * 100);
+            }
+        }
+        zoomIndicator.innerText = `Zoom: ${zoomPercentage}%`;
+    }
+
+    function createStairs() {
+        stairsGroup = new THREE.Group();
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({ color: 0x0984e3, roughness: 0.3, metalness: 0.1 });
+        const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+
+        const positions = [
+            { x: 0, y: 0, z: 1 },
+            { x: 0, y: 0, z: 0 }, { x: 0, y: 1, z: 0 },
+            { x: 0, y: 0, z: -1 }, { x: 0, y: 1, z: -1 }, { x: 0, y: 2, z: -1 }
+        ];
+
+        const materialTopRed = [
+            new THREE.MeshStandardMaterial({ color: 0x0984e3 }), 
+            new THREE.MeshStandardMaterial({ color: 0x0984e3 }), 
+            new THREE.MeshStandardMaterial({ color: 0xff7675, emissive: 0x330000 }), 
+            new THREE.MeshStandardMaterial({ color: 0x0984e3 }), 
+            new THREE.MeshStandardMaterial({ color: 0x0984e3 }), 
+            new THREE.MeshStandardMaterial({ color: 0x0984e3 })
+        ];
+
+        positions.forEach((pos, index) => {
+            const mat = (index === 5) ? materialTopRed : material;
+            const cube = new THREE.Mesh(geometry, mat);
+            cube.position.set(pos.x, pos.y, pos.z);
+            cube.castShadow = true;
+            const edges = new THREE.EdgesGeometry(geometry);
+            const line = new THREE.LineSegments(edges, edgeMaterial);
+            cube.add(line);
+            stairsGroup.add(cube);
+        });
+
+        stairsGroup.position.y = 0.5; 
+        scene.add(stairsGroup);
+    }
+
+    function createCustomAxes() {
+        axesGroup = new THREE.Group();
+        axisMeshes['x'] = createAxisCylinder(new THREE.Vector3(1,0,0), 0xff4757, 0.5);
+        axisMeshes['y'] = createAxisCylinder(new THREE.Vector3(0,1,0), 0x2ed573, 0.5);
+        axisMeshes['z'] = createAxisCylinder(new THREE.Vector3(0,0,1), 0x1e90ff, 0.5);
+        scene.add(axesGroup);
+    }
+
+    function createAxisCylinder(direction, color, centerY) {
+        const length = 30;
+        const thickness = 0.08;
+        const geometry = new THREE.CylinderGeometry(thickness, thickness, length, 16);
+        const material = new THREE.MeshBasicMaterial({ color: color });
+        const cylinder = new THREE.Mesh(geometry, material);
+        const upVector = new THREE.Vector3(0, 1, 0);
+        cylinder.quaternion.setFromUnitVectors(upVector, direction.clone().normalize());
+        if (direction.y === 0) { cylinder.position.y = centerY; }
+        cylinder.visible = false;
+        axesGroup.add(cylinder);
+        return cylinder;
+    }
+
+    function checkActionState() {
+        if (selectedAxisName && selectedAxisName !== 'none' && selectedDirectionSign !== 0 && selectedAngle > 0) {
+            btnAction.disabled = false;
+        } else {
+            btnAction.disabled = true;
+        }
+    }
+
+    window.selectAxis = function(axisName) {
+        if (isAnimating) return;
+        selectedAxisName = axisName;
+        btnsAxis.forEach(b => b.classList.remove('active-axis'));
+        
+        if(axisName === 'x') document.getElementById('btnAxisX').classList.add('active-axis');
+        else if(axisName === 'y') document.getElementById('btnAxisY').classList.add('active-axis');
+        else if(axisName === 'z') document.getElementById('btnAxisZ').classList.add('active-axis');
+        else if(axisName === 'none') document.getElementById('btnAxisNone').classList.add('active-axis');
+
+        for (const key in axisMeshes) { axisMeshes[key].visible = (key === axisName); }
+
+        if (axisName === 'x') selectedAxisVector = new THREE.Vector3(1, 0, 0);
+        else if (axisName === 'y') selectedAxisVector = new THREE.Vector3(0, 1, 0);
+        else if (axisName === 'z') selectedAxisVector = new THREE.Vector3(0, 0, 1);
+        else selectedAxisVector = null;
+
+        if (axisName === 'none') {
+            btnsDir.forEach(b => b.disabled = true);
+            btnsAngle.forEach(b => b.disabled = true);
+            btnAction.disabled = true;
+        } else {
+            btnsDir.forEach(b => b.disabled = false);
+            checkActionState();
+        }
+    };
+
+    window.selectDirection = function(sign) {
+        if (isAnimating) return;
+        selectedDirectionSign = sign;
+        btnsDir.forEach(b => b.classList.remove('active-dir'));
+        if (sign === -1) document.getElementById('btnCW').classList.add('active-dir');
+        else document.getElementById('btnCCW').classList.add('active-dir');
+        btnsAngle.forEach(b => b.disabled = false);
+        checkActionState();
+    };
+
+    window.selectAngle = function(degrees) {
+        if (isAnimating) return;
+        selectedAngle = degrees;
+        btnsAngle.forEach(b => b.classList.remove('active-angle'));
+        event.target.classList.add('active-angle');
+        checkActionState();
+    };
+
+    window.executeRotation = function() {
+        if (isAnimating || !selectedAxisVector || selectedAngle === 0) return;
+        isAnimating = true;
+        btnAction.disabled = true;
+        const totalRad = selectedAngle * (Math.PI / 180);
+        totalRotationToPerform = totalRad;
+        const speed = 0.05; 
+        rotationStep = speed;
+    };
+
+    window.toggleCamera = function() {
+        isOrthographic = !isOrthographic;
+        const currentPos = activeCamera.position.clone();
+        const currentTarget = controls.target.clone();
+        activeCamera = isOrthographic ? orthoCamera : perspectiveCamera;
+        activeCamera.position.copy(currentPos);
+        activeCamera.lookAt(currentTarget);
+        controls.object = activeCamera;
+        controls.update();
+        camIndicator.innerText = isOrthographic ? "Modo: Ortogonal (Técnico)" : "Modo: Perspectiva (Realista)";
+        camIndicator.style.borderColor = isOrthographic ? "#ff7675" : "#00b894";
+        camIndicator.style.color = isOrthographic ? "#ff7675" : "#00b894";
+        if(isOrthographic) { activeCamera.zoom = 1; activeCamera.updateProjectionMatrix(); }
+        updateZoomDisplay();
+    };
+
+    window.resetScene = function() {
+        if (isAnimating) return;
+        stairsGroup.rotation.set(0, 0, 0);
+        stairsGroup.quaternion.set(0, 0, 0, 1);
+        activeCamera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+        activeCamera.lookAt(0, 0, 0);
+        controls.target.set(0, 0, 0);
+        if (isOrthographic) { activeCamera.zoom = 1; activeCamera.updateProjectionMatrix(); }
+        controls.update();
+        updateZoomDisplay();
+        btnsAxis.forEach(b => b.classList.remove('active-axis'));
+        btnsDir.forEach(b => { b.classList.remove('active-dir'); b.disabled = true; });
+        btnsAngle.forEach(b => { b.classList.remove('active-angle'); b.disabled = true; });
+        btnAction.disabled = true;
+        for (const key in axisMeshes) { axisMeshes[key].visible = false; }
+        selectedAxisName = null;
+        selectedAxisVector = null;
+        selectedDirectionSign = 0;
+        selectedAngle = 0;
+    };
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (isAnimating) {
+            let step = rotationStep;
+            if (totalRotationToPerform <= step) {
+                step = totalRotationToPerform;
+                isAnimating = false;
+                 checkActionState(); 
+            }
+            totalRotationToPerform -= step;
+            const angleDelta = step * selectedDirectionSign;
+            const qStep = new THREE.Quaternion();
+            qStep.setFromAxisAngle(selectedAxisVector, angleDelta);
+            stairsGroup.quaternion.premultiply(qStep);
+        }
+        controls.update();
+        renderer.render(scene, activeCamera);
+    }
+
+    function onWindowResize() {
+        const canvas = document.getElementById('canvas3d');
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        perspectiveCamera.aspect = aspect;
+        perspectiveCamera.updateProjectionMatrix();
+        orthoCamera.left = -frustumSize * aspect / 2;
+        orthoCamera.right = frustumSize * aspect / 2;
+        orthoCamera.top = frustumSize / 2;
+        orthoCamera.bottom = -frustumSize / 2;
+        orthoCamera.updateProjectionMatrix();
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+        updateZoomDisplay();
+    }
+</script>
+</body>
+</html>
