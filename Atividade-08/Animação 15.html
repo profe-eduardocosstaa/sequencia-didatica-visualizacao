@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vistas Ortogonais de um Cubo</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+
+const CuboSimples = () => {
+  const canvasRef = useRef(null);
+  const cameraRef = useRef(null);
+  const rendererRef = useRef(null);
+  const sceneRef = useRef(null);
+  const animationIdRef = useRef(null);
+
+  useEffect(() => {
+    // Configuração da cena
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a1a);
+    sceneRef.current = scene;
+
+    // Configuração da câmera
+    const camera = new THREE.PerspectiveCamera(
+      75, // Campo de visão
+      1,  // Aspect ratio (será 1:1 pois o canvas é quadrado)
+      0.1, // Near plane
+      1000 // Far plane
+    );
+    camera.position.set(5, 5, 7); // Posição inicial da câmera (ajustada para o cubo flutuante)
+    camera.lookAt(0, 3, 0); // Olha para o cubo que está em y=3
+    cameraRef.current = camera;
+
+    // Configuração do renderer
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas: canvasRef.current,
+      antialias: true 
+    });
+    renderer.setSize(600, 600);
+    rendererRef.current = renderer;
+
+    // Iluminação
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    // Criar o cubo com faces coloridas
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    
+    // Array de materiais - uma cor para cada face
+    const materials = [
+      new THREE.MeshStandardMaterial({ color: 0x9370DB }), // Direita - Roxo (TROCADO)
+      new THREE.MeshStandardMaterial({ color: 0xFFD700 }), // Esquerda - Amarelo (TROCADO)
+      new THREE.MeshStandardMaterial({ color: 0x4169E1 }), // Topo - Azul
+      new THREE.MeshStandardMaterial({ color: 0x32CD32 }), // Base - Verde
+      createTextMaterial(0x8B1A1A, 'FRENTE'), // Frente - Vermelho Bordô com texto
+      new THREE.MeshStandardMaterial({ color: 0xFF8C00 })  // Trás - Laranja
+    ];
+
+    // Função para criar material com texto
+    function createTextMaterial(backgroundColor, text) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // Fundo colorido
+      ctx.fillStyle = '#' + backgroundColor.toString(16).padStart(6, '0');
+      ctx.fillRect(0, 0, 512, 512);
+      
+      // Texto branco no centro
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 80px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 256);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      return new THREE.MeshStandardMaterial({ map: texture });
+    }
+
+    const cube = new THREE.Mesh(geometry, materials);
+    // Sem rotação - deixa na posição padrão do Three.js
+    cube.position.y = 3; // Eleva o cubo para ficar flutuando no ar
+    scene.add(cube);
+
+    // Adicionar bordas pretas ao cubo
+    const edges = new THREE.EdgesGeometry(geometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+    const wireframe = new THREE.LineSegments(edges, lineMaterial);
+    cube.add(wireframe);
+
+    // Adicionar chão com textura de porcelanato
+    const floorGeometry = new THREE.PlaneGeometry(15, 15);
+    
+    // Criar textura procedural de porcelanato usando canvas
+    const floorCanvas = document.createElement('canvas');
+    floorCanvas.width = 512;
+    floorCanvas.height = 512;
+    const floorCtx = floorCanvas.getContext('2d');
+    
+    // Base do porcelanato (mármore branco)
+    floorCtx.fillStyle = '#f0f0f0';
+    floorCtx.fillRect(0, 0, 512, 512);
+    
+    // Adicionar veios de mármore
+    floorCtx.strokeStyle = '#d0d0d0';
+    floorCtx.lineWidth = 2;
+    for (let i = 0; i < 20; i++) {
+      floorCtx.beginPath();
+      floorCtx.moveTo(Math.random() * 512, Math.random() * 512);
+      floorCtx.quadraticCurveTo(
+        Math.random() * 512, Math.random() * 512,
+        Math.random() * 512, Math.random() * 512
+      );
+      floorCtx.stroke();
+    }
+    
+    // Veios mais escuros
+    floorCtx.strokeStyle = '#c0c0c0';
+    floorCtx.lineWidth = 1;
+    for (let i = 0; i < 15; i++) {
+      floorCtx.beginPath();
+      floorCtx.moveTo(Math.random() * 512, Math.random() * 512);
+      floorCtx.lineTo(Math.random() * 512, Math.random() * 512);
+      floorCtx.stroke();
+    }
+    
+    const floorTexture = new THREE.CanvasTexture(floorCanvas);
+    floorTexture.wrapS = THREE.RepeatWrapping;
+    floorTexture.wrapT = THREE.RepeatWrapping;
+    floorTexture.repeat.set(3, 3);
+    
+    const floorMaterial = new THREE.MeshStandardMaterial({ 
+      map: floorTexture,
+      roughness: 0.3,
+      metalness: 0.4
+    });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Adicionar tapete decorativo (EXPANDIDO)
+    const rugGeometry = new THREE.PlaneGeometry(8, 8); // Aumentado de 4x4 para 8x8
+    
+    // Criar textura do tapete
+    const rugCanvas = document.createElement('canvas');
+    rugCanvas.width = 512;
+    rugCanvas.height = 512;
+    const rugCtx = rugCanvas.getContext('2d');
+    
+    // Base do tapete (vermelho bordô)
+    rugCtx.fillStyle = '#8B1A1A';
+    rugCtx.fillRect(0, 0, 512, 512);
+    
+    // Borda dourada externa
+    rugCtx.strokeStyle = '#DAA520';
+    rugCtx.lineWidth = 20;
+    rugCtx.strokeRect(10, 10, 492, 492);
+    
+    // Borda interna decorativa
+    rugCtx.strokeStyle = '#B8860B';
+    rugCtx.lineWidth = 10;
+    rugCtx.strokeRect(40, 40, 432, 432);
+    
+    // Padrão central - mandala
+    rugCtx.strokeStyle = '#DAA520';
+    rugCtx.lineWidth = 3;
+    const centerX = 256;
+    const centerY = 256;
+    
+    // Círculos concêntricos
+    for (let r = 40; r <= 160; r += 40) {
+      rugCtx.beginPath();
+      rugCtx.arc(centerX, centerY, r, 0, Math.PI * 2);
+      rugCtx.stroke();
+    }
+    
+    // Linhas radiais decorativas
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      rugCtx.beginPath();
+      rugCtx.moveTo(centerX, centerY);
+      rugCtx.lineTo(
+        centerX + Math.cos(angle) * 180,
+        centerY + Math.sin(angle) * 180
+      );
+      rugCtx.stroke();
+    }
+    
+    // Pequenos detalhes decorativos nos cantos
+    rugCtx.fillStyle = '#DAA520';
+    const corners = [
+      [80, 80], [432, 80], [80, 432], [432, 432]
+    ];
+    corners.forEach(([x, y]) => {
+      rugCtx.beginPath();
+      rugCtx.arc(x, y, 15, 0, Math.PI * 2);
+      rugCtx.fill();
+    });
+    
+    const rugTexture = new THREE.CanvasTexture(rugCanvas);
+    
+    const rugMaterial = new THREE.MeshStandardMaterial({ 
+      map: rugTexture,
+      roughness: 0.9,
+      metalness: 0.0
+    });
+    const rug = new THREE.Mesh(rugGeometry, rugMaterial);
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.y = 0.01; // Ligeiramente acima do chão para evitar z-fighting
+    rug.receiveShadow = true;
+    scene.add(rug);
+
+    // Adicionar sofá em formato de L REALISTA
+    const sofaMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x2C3E50, // Azul escuro elegante
+      roughness: 0.8,
+      metalness: 0.05
+    });
+    
+    const sofaDarkMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x1a252f, // Azul mais escuro para contraste
+      roughness: 0.9,
+      metalness: 0.0
+    });
+    
+    // ===== PARTE 1: SOFÁ AO LONGO DA PAREDE DE TRÁS =====
+    
+    // Base/estrutura inferior do sofá 1
+    const base1Geometry = new THREE.BoxGeometry(8, 0.3, 1.8);
+    const base1 = new THREE.Mesh(base1Geometry, sofaDarkMaterial);
+    base1.position.set(-1, 0.15, -4.1);
+    scene.add(base1);
+    
+    // Almofadas do assento (3 almofadas individuais)
+    for (let i = 0; i < 3; i++) {
+      const seatGeometry = new THREE.BoxGeometry(2.4, 0.6, 1.6);
+      const seat = new THREE.Mesh(seatGeometry, sofaMaterial);
+      seat.position.set(-3.8 + i * 2.6, 0.6, -4.0);
+      // Arredondar um pouco os cantos visualmente
+      seat.scale.set(1, 0.9, 1);
+      scene.add(seat);
+      
+      // Adicionar "costuras" nas almofadas
+      const edgesGeometry = new THREE.EdgesGeometry(seatGeometry);
+      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x1a252f, linewidth: 1 });
+      const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+      seat.add(edges);
+    }
+    
+    // Encosto com almofadas individuais
+    for (let i = 0; i < 3; i++) {
+      const backCushionGeometry = new THREE.BoxGeometry(2.4, 1.4, 0.5);
+      const backCushion = new THREE.Mesh(backCushionGeometry, sofaMaterial);
+      backCushion.position.set(-3.8 + i * 2.6, 1.4, -4.85);
+      backCushion.rotation.x = -0.1; // Leve inclinação para trás
+      scene.add(backCushion);
+      
+      // Costuras
+      const edgesGeometry = new THREE.EdgesGeometry(backCushionGeometry);
+      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x1a252f, linewidth: 1 });
+      const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+      backCushion.add(edges);
+    }
+    
+    // Braço esquerdo com volume
+    const arm1BaseGeometry = new THREE.BoxGeometry(0.6, 0.7, 1.8);
+    const arm1Base = new THREE.Mesh(arm1BaseGeometry, sofaMaterial);
+    arm1Base.position.set(-5.3, 0.85, -4.1);
+    scene.add(arm1Base);
+    
+    const arm1TopGeometry = new THREE.BoxGeometry(0.6, 0.3, 1.8);
+    const arm1Top = new THREE.Mesh(arm1TopGeometry, sofaMaterial);
+    arm1Top.position.set(-5.3, 1.35, -4.1);
+    scene.add(arm1Top);
+    
+    // ===== PARTE 2: SOFÁ PERPENDICULAR (LATERAL) =====
+    
+    // Base/estrutura inferior do sofá 2
+    const base2Geometry = new THREE.BoxGeometry(1.8, 0.3, 5.5);
+    const base2 = new THREE.Mesh(base2Geometry, sofaDarkMaterial);
+    base2.position.set(-5.6, 0.15, -1.25);
+    scene.add(base2);
+    
+    // Almofadas do assento (2 almofadas individuais)
+    for (let i = 0; i < 2; i++) {
+      const seatGeometry = new THREE.BoxGeometry(1.6, 0.6, 2.4);
+      const seat = new THREE.Mesh(seatGeometry, sofaMaterial);
+      seat.position.set(-5.5, 0.6, -2.9 + i * 2.6);
+      seat.scale.set(1, 0.9, 1);
+      scene.add(seat);
+      
+      // Costuras
+      const edgesGeometry = new THREE.EdgesGeometry(seatGeometry);
+      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x1a252f, linewidth: 1 });
+      const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+      seat.add(edges);
+    }
+    
+    // Encosto com almofadas individuais
+    for (let i = 0; i < 2; i++) {
+      const backCushionGeometry = new THREE.BoxGeometry(0.5, 1.4, 2.4);
+      const backCushion = new THREE.Mesh(backCushionGeometry, sofaMaterial);
+      backCushion.position.set(-6.35, 1.4, -2.9 + i * 2.6);
+      backCushion.rotation.z = 0.1; // Leve inclinação
+      scene.add(backCushion);
+      
+      // Costuras
+      const edgesGeometry = new THREE.EdgesGeometry(backCushionGeometry);
+      const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x1a252f, linewidth: 1 });
+      const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+      backCushion.add(edges);
+    }
+    
+    // Braço frontal com volume
+    const arm2BaseGeometry = new THREE.BoxGeometry(1.8, 0.7, 0.6);
+    const arm2Base = new THREE.Mesh(arm2BaseGeometry, sofaMaterial);
+    arm2Base.position.set(-5.6, 0.85, 1.25);
+    scene.add(arm2Base);
+    
+    const arm2TopGeometry = new THREE.BoxGeometry(1.8, 0.3, 0.6);
+    const arm2Top = new THREE.Mesh(arm2TopGeometry, sofaMaterial);
+    arm2Top.position.set(-5.6, 1.35, 1.25);
+    scene.add(arm2Top);
+    
+    // Adicionar pés do sofá (cilindros de madeira)
+    const footMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x3E2723, // Marrom escuro (madeira)
+      roughness: 0.6,
+      metalness: 0.2
+    });
+    
+    const footPositions = [
+      [-4.5, -3.5], [-1, -3.5], [2.5, -3.5], // Parte traseira
+      [-6.2, -3.5], [-6.2, -0.5], [-6.2, 0.8]  // Parte lateral
+    ];
+    
+    footPositions.forEach(([x, z]) => {
+      const footGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16);
+      const foot = new THREE.Mesh(footGeometry, footMaterial);
+      foot.position.set(x, 0.15, z);
+      scene.add(foot);
+    });
+    
+    // Adicionar almofadas decorativas coloridas (REALISTAS)
+    const cushionMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xC0392B, // Vermelho
+      roughness: 0.9,
+      metalness: 0.0
+    });
+    
+    const cushionMaterial2 = new THREE.MeshStandardMaterial({ 
+      color: 0xF39C12, // Dourado/amarelo
+      roughness: 0.9,
+      metalness: 0.0
+    });
+    
+    // Almofadas decorativas no sofá traseiro
+    const decorCushion1Geometry = new THREE.BoxGeometry(0.6, 0.6, 0.15);
+    const decorCushion1 = new THREE.Mesh(decorCushion1Geometry, cushionMaterial);
+    decorCushion1.position.set(-3.8, 1.3, -4.3);
+    decorCushion1.rotation.y = 0.2;
+    scene.add(decorCushion1);
+    
+    const decorCushion2 = new THREE.Mesh(decorCushion1Geometry, cushionMaterial2);
+    decorCushion2.position.set(-1.2, 1.3, -4.3);
+    decorCushion2.rotation.y = -0.15;
+    scene.add(decorCushion2);
+    
+    const decorCushion3 = new THREE.Mesh(decorCushion1Geometry, cushionMaterial);
+    decorCushion3.position.set(1.5, 1.3, -4.3);
+    decorCushion3.rotation.y = 0.1;
+    scene.add(decorCushion3);
+    
+    // Almofadas decorativas no sofá lateral
+    const decorCushion4 = new THREE.Mesh(decorCushion1Geometry, cushionMaterial2);
+    decorCushion4.position.set(-6.0, 1.3, -2.5);
+    decorCushion4.rotation.y = Math.PI / 2;
+    decorCushion4.rotation.z = 0.1;
+    scene.add(decorCushion4);
+    
+    const decorCushion5 = new THREE.Mesh(decorCushion1Geometry, cushionMaterial);
+    decorCushion5.position.set(-6.0, 1.3, 0);
+    decorCushion5.rotation.y = Math.PI / 2;
+    decorCushion5.rotation.z = -0.1;
+    scene.add(decorCushion5);
+
+    // ===== VASOS DE FLORES =====
+    
+    // Material do vaso (cerâmica branca)
+    const vaseMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xF5F5F5,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    
+    // VASO 1 - Na ponta direita do sofá traseiro (MAIS PRÓXIMO DA PAREDE)
+    const vase1Body = new THREE.CylinderGeometry(0.25, 0.18, 0.6, 16);
+    const vase1 = new THREE.Mesh(vase1Body, vaseMaterial);
+    vase1.position.set(3.5, 0.3, -4.5); // Movido de -3.5 para -4.5 (mais perto da parede)
+    scene.add(vase1);
+    
+    // Borda do vaso 1
+    const vase1Rim = new THREE.CylinderGeometry(0.28, 0.25, 0.08, 16);
+    const vase1RimMesh = new THREE.Mesh(vase1Rim, vaseMaterial);
+    vase1RimMesh.position.set(3.5, 0.64, -4.5); // Ajustado
+    scene.add(vase1RimMesh);
+    
+    // Flores do vaso 1 (rosas vermelhas)
+    const flowerMaterial1 = new THREE.MeshStandardMaterial({ 
+      color: 0xE74C3C,
+      roughness: 0.8
+    });
+    
+    const stemMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x27AE60,
+      roughness: 0.7
+    });
+    
+    // Hastes
+    for (let i = 0; i < 5; i++) {
+      const stemGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8);
+      const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+      const angle = (Math.PI * 2 * i) / 5;
+      const radius = 0.12;
+      stem.position.set(
+        3.5 + Math.cos(angle) * radius,
+        0.9,
+        -4.5 + Math.sin(angle) * radius // Ajustado
+      );
+      stem.rotation.z = Math.sin(angle) * 0.15;
+      stem.rotation.x = Math.cos(angle) * 0.15;
+      scene.add(stem);
+      
+      // Flor no topo
+      const flowerGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+      const flower = new THREE.Mesh(flowerGeometry, flowerMaterial1);
+      flower.position.set(
+        3.5 + Math.cos(angle) * radius,
+        1.3 + Math.random() * 0.2,
+        -4.5 + Math.sin(angle) * radius // Ajustado
+      );
+      flower.scale.set(1, 0.6, 1);
+      scene.add(flower);
+    }
+    
+    // Folhas no vaso 1
+    const leafMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x2ECC71,
+      roughness: 0.9,
+      side: THREE.DoubleSide
+    });
+    
+    for (let i = 0; i < 8; i++) {
+      const leafGeometry = new THREE.CircleGeometry(0.15, 8);
+      const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+      const angle = (Math.PI * 2 * i) / 8;
+      const radius = 0.2;
+      leaf.position.set(
+        3.5 + Math.cos(angle) * radius,
+        0.7 + Math.random() * 0.3,
+        -4.5 + Math.sin(angle) * radius // Ajustado
+      );
+      leaf.rotation.y = angle;
+      leaf.rotation.x = Math.PI / 2 + Math.random() * 0.5;
+      leaf.scale.set(0.6, 1, 1);
+      scene.add(leaf);
+    }
+    
+    // VASO 2 - Na ponta frontal do sofá lateral (MAIS PRÓXIMO DA PAREDE)
+    const vase2Body = new THREE.CylinderGeometry(0.25, 0.18, 0.6, 16);
+    const vase2 = new THREE.Mesh(vase2Body, vaseMaterial);
+    vase2.position.set(-6.5, 0.3, 2.0); // Movido de -5.0 para -6.5 (mais perto da parede lateral)
+    scene.add(vase2);
+    
+    // Borda do vaso 2
+    const vase2Rim = new THREE.CylinderGeometry(0.28, 0.25, 0.08, 16);
+    const vase2RimMesh = new THREE.Mesh(vase2Rim, vaseMaterial);
+    vase2RimMesh.position.set(-6.5, 0.64, 2.0); // Ajustado
+    scene.add(vase2RimMesh);
+    
+    // Flores do vaso 2 (tulipas amarelas/douradas)
+    const flowerMaterial2 = new THREE.MeshStandardMaterial({ 
+      color: 0xF39C12,
+      roughness: 0.7
+    });
+    
+    // Hastes
+    for (let i = 0; i < 6; i++) {
+      const stemGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.9, 8);
+      const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+      const angle = (Math.PI * 2 * i) / 6;
+      const radius = 0.1;
+      stem.position.set(
+        -6.5 + Math.cos(angle) * radius, // Ajustado
+        0.95,
+        2.0 + Math.sin(angle) * radius
+      );
+      stem.rotation.z = Math.sin(angle) * 0.12;
+      stem.rotation.x = Math.cos(angle) * 0.12;
+      scene.add(stem);
+      
+      // Tulipa (cone invertido)
+      const tulipGeometry = new THREE.ConeGeometry(0.08, 0.15, 8);
+      const tulip = new THREE.Mesh(tulipGeometry, flowerMaterial2);
+      tulip.position.set(
+        -6.5 + Math.cos(angle) * radius, // Ajustado
+        1.45 + Math.random() * 0.15,
+        2.0 + Math.sin(angle) * radius
+      );
+      tulip.rotation.x = Math.PI;
+      scene.add(tulip);
+    }
+    
+    // Folhas no vaso 2
+    for (let i = 0; i < 10; i++) {
+      const leafGeometry = new THREE.CircleGeometry(0.12, 8);
+      const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+      const angle = (Math.PI * 2 * i) / 10;
+      const radius = 0.18;
+      leaf.position.set(
+        -6.5 + Math.cos(angle) * radius, // Ajustado
+        0.65 + Math.random() * 0.4,
+        2.0 + Math.sin(angle) * radius
+      );
+      leaf.rotation.y = angle;
+      leaf.rotation.x = Math.PI / 2 + Math.random() * 0.4;
+      leaf.scale.set(0.5, 1.2, 1);
+      scene.add(leaf);
+    }
+
+    // Adicionar parede de fundo com decoração
+    const wallGeometry = new THREE.PlaneGeometry(15, 10);
+    
+    // Criar textura decorativa para a parede
+    const wallCanvas = document.createElement('canvas');
+    wallCanvas.width = 512;
+    wallCanvas.height = 512;
+    const wallCtx = wallCanvas.getContext('2d');
+    
+    // Base da parede (cinza suave)
+    wallCtx.fillStyle = '#3a3a3a';
+    wallCtx.fillRect(0, 0, 512, 512);
+    
+    // Adicionar padrão geométrico decorativo
+    wallCtx.strokeStyle = '#505050';
+    wallCtx.lineWidth = 2;
+    
+    // Linhas verticais decorativas
+    for (let i = 0; i < 8; i++) {
+      const x = (i + 1) * 64;
+      wallCtx.beginPath();
+      wallCtx.moveTo(x, 0);
+      wallCtx.lineTo(x, 512);
+      wallCtx.stroke();
+    }
+    
+    // Adicionar alguns retângulos decorativos
+    wallCtx.fillStyle = '#454545';
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const x = 128 + i * 128;
+        const y = 128 + j * 128;
+        wallCtx.fillRect(x - 20, y - 20, 40, 40);
+      }
+    }
+    
+    // Adicionar molduras decorativas
+    wallCtx.strokeStyle = '#555555';
+    wallCtx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const x = 128 + i * 128;
+        const y = 128 + j * 128;
+        wallCtx.strokeRect(x - 25, y - 25, 50, 50);
+      }
+    }
+    
+    const wallTexture = new THREE.CanvasTexture(wallCanvas);
+    wallTexture.wrapS = THREE.RepeatWrapping;
+    wallTexture.wrapT = THREE.RepeatWrapping;
+    wallTexture.repeat.set(2, 2);
+    
+    const wallMaterial = new THREE.MeshStandardMaterial({ 
+      map: wallTexture,
+      color: 0xFFF8DC, // Bege claro
+      roughness: 0.8,
+      metalness: 0.1
+    });
+    const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+    wall.position.z = -5;
+    wall.position.y = 5;
+    wall.receiveShadow = true;
+    scene.add(wall);
+
+    // ===== ADICIONAR PAREDE FRONTAL COM TV =====
+    
+    // Parede frontal (AJUSTADA - um pouco mais longe) - COR BEGE
+    const frontWallGeometry = new THREE.PlaneGeometry(15, 10);
+    const frontWallMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xFFF8DC, // Bege claro
+      roughness: 0.8,
+      metalness: 0.1
+    });
+    const frontWall = new THREE.Mesh(frontWallGeometry, frontWallMaterial);
+    frontWall.position.z = 6.5; // Ajustado de 5.5 para 6.5 (um pouco mais longe)
+    frontWall.position.y = 5;
+    frontWall.rotation.y = Math.PI; // Girar para ficar de frente para o cubo
+    scene.add(frontWall);
+
+    // TV na parede frontal (60 POLEGADAS - CORRIGIDA)
+    // Moldura/suporte da TV (preto)
+    const tvFrameGeometry = new THREE.BoxGeometry(5.5, 3.3, 0.15);
+    const tvFrameMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x000000,
+      roughness: 0.3,
+      metalness: 0.7
+    });
+    const tvFrame = new THREE.Mesh(tvFrameGeometry, tvFrameMaterial);
+    tvFrame.position.set(0, 4.5, 6.4); // Ajustado para nova posição da parede
+    scene.add(tvFrame);
+
+    // Tela da TV (DESLIGADA - tela preta)
+    const tvScreenCanvas = document.createElement('canvas');
+    tvScreenCanvas.width = 512;
+    tvScreenCanvas.height = 288; // Proporção 16:9
+    const tvCtx = tvScreenCanvas.getContext('2d');
+    
+    // Tela preta (TV desligada)
+    tvCtx.fillStyle = '#000000';
+    tvCtx.fillRect(0, 0, 512, 288);
+    
+    // Apenas um leve reflexo para parecer vidro
+    tvCtx.fillStyle = 'rgba(50, 50, 50, 0.3)';
+    tvCtx.fillRect(0, 0, 512, 288);
+    
+    const tvScreenTexture = new THREE.CanvasTexture(tvScreenCanvas);
+    tvScreenTexture.needsUpdate = true;
+    
+    const tvScreenMaterial = new THREE.MeshStandardMaterial({ 
+      map: tvScreenTexture,
+      roughness: 0.2,
+      metalness: 0.8,
+      side: THREE.DoubleSide
+    });
+    
+    const tvScreenGeometry = new THREE.PlaneGeometry(5.2, 2.93); // 60 polegadas - Proporção 16:9
+    const tvScreen = new THREE.Mesh(tvScreenGeometry, tvScreenMaterial);
+    tvScreen.position.set(0, 4.5, 6.48); // Ajustado - na frente da parede
+    // Tentando sem rotação para ver se funciona
+    scene.add(tvScreen);
+    
+    // Suporte inferior da TV (maior também)
+    const tvStandGeometry = new THREE.BoxGeometry(0.4, 0.8, 0.4);
+    const tvStand = new THREE.Mesh(tvStandGeometry, tvFrameMaterial);
+    tvStand.position.set(0, 2.7, 6.4); // Ajustado
+    scene.add(tvStand);
+
+    // ===== AR CONDICIONADO =====
+    // Posicionado mais à direita da parede da TV, próximo ao teto
+    const acMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xFFFFFF, // Branco puro
+      roughness: 0.2,
+      metalness: 0.3
+    });
+    
+    // Corpo principal do ar condicionado (MUITO MAIOR)
+    const acBodyGeometry = new THREE.BoxGeometry(3.5, 1.2, 0.6);
+    const acBody = new THREE.Mesh(acBodyGeometry, acMaterial);
+    acBody.position.set(4.5, 8.7, 6.2); // Mais à direita (4.5) e mais alto (8.7)
+    scene.add(acBody);
+    
+    // Borda superior arredondada (tampa)
+    const acTopGeometry = new THREE.BoxGeometry(3.5, 0.15, 0.65);
+    const acTopMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xF0F0F0,
+      roughness: 0.3,
+      metalness: 0.2
+    });
+    const acTop = new THREE.Mesh(acTopGeometry, acTopMaterial);
+    acTop.position.set(4.5, 9.375, 6.2); // Ajustado para nova posição
+    scene.add(acTop);
+    
+    // Grade de ventilação frontal MAIOR E MAIS DETALHADA
+    const acGrillCanvas = document.createElement('canvas');
+    acGrillCanvas.width = 1024;
+    acGrillCanvas.height = 512;
+    const acGrillCtx = acGrillCanvas.getContext('2d');
+    
+    // Fundo cinza escuro da grade
+    acGrillCtx.fillStyle = '#1a1a1a';
+    acGrillCtx.fillRect(0, 0, 1024, 512);
+    
+    // Moldura externa da grade
+    acGrillCtx.strokeStyle = '#404040';
+    acGrillCtx.lineWidth = 8;
+    acGrillCtx.strokeRect(30, 30, 964, 452);
+    
+    // Linhas horizontais da grade (venezianas) - MAIS DETALHADAS
+    acGrillCtx.strokeStyle = '#0a0a0a';
+    acGrillCtx.lineWidth = 4;
+    for (let i = 50; i < 470; i += 15) {
+      acGrillCtx.beginPath();
+      acGrillCtx.moveTo(50, i);
+      acGrillCtx.lineTo(750, i);
+      acGrillCtx.stroke();
+    }
+    
+    // Sombreamento nas venezianas para dar profundidade
+    acGrillCtx.strokeStyle = '#2a2a2a';
+    acGrillCtx.lineWidth = 2;
+    for (let i = 52; i < 470; i += 15) {
+      acGrillCtx.beginPath();
+      acGrillCtx.moveTo(50, i);
+      acGrillCtx.lineTo(750, i);
+      acGrillCtx.stroke();
+    }
+    
+    // Painel lateral direito com controles
+    acGrillCtx.fillStyle = '#2a2a2a';
+    acGrillCtx.fillRect(780, 50, 210, 420);
+    
+    // Display LED GRANDE (azul brilhante)
+    acGrillCtx.fillStyle = '#00BFFF';
+    acGrillCtx.fillRect(800, 80, 170, 80);
+    
+    // Texto no display "22°C" - MAIOR
+    acGrillCtx.fillStyle = '#000000';
+    acGrillCtx.font = 'bold 50px Arial';
+    acGrillCtx.textAlign = 'center';
+    acGrillCtx.textBaseline = 'middle';
+    acGrillCtx.fillText('22°C', 885, 120);
+    
+    // Logo/marca no display
+    acGrillCtx.font = 'bold 16px Arial';
+    acGrillCtx.fillStyle = '#003366';
+    acGrillCtx.fillText('SPLIT', 885, 145);
+    
+    // Indicadores LED (verde = ligado)
+    acGrillCtx.fillStyle = '#00FF00';
+    acGrillCtx.beginPath();
+    acGrillCtx.arc(830, 200, 8, 0, Math.PI * 2);
+    acGrillCtx.fill();
+    
+    // Texto "ON" ao lado do LED
+    acGrillCtx.fillStyle = '#FFFFFF';
+    acGrillCtx.font = 'bold 20px Arial';
+    acGrillCtx.fillText('ON', 870, 205);
+    
+    // Ícones de função
+    acGrillCtx.font = '30px Arial';
+    // Ícone de flocos de neve (modo frio)
+    acGrillCtx.fillText('❄️', 820, 270);
+    // Ícone de ventilador
+    acGrillCtx.fillText('🌀', 885, 270);
+    // Ícone de timer
+    acGrillCtx.fillText('⏲️', 945, 270);
+    
+    const acGrillTexture = new THREE.CanvasTexture(acGrillCanvas);
+    const acGrillMaterial = new THREE.MeshStandardMaterial({ 
+      map: acGrillTexture,
+      roughness: 0.4,
+      metalness: 0.4
+    });
+    
+    const acGrillGeometry = new THREE.PlaneGeometry(3.3, 1.1);
+    const acGrill = new THREE.Mesh(acGrillGeometry, acGrillMaterial);
+    acGrill.position.set(4.5, 8.7, 6.51); // Ajustado para nova posição
+    scene.add(acGrill);
+    
+    // Aleta de direcionamento de ar (saída de ar inferior)
+    const acFlapGeometry = new THREE.BoxGeometry(3.2, 0.08, 0.2);
+    const acFlapMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xE8E8E8,
+      roughness: 0.3,
+      metalness: 0.4
+    });
+    const acFlap = new THREE.Mesh(acFlapGeometry, acFlapMaterial);
+    acFlap.position.set(4.5, 8.05, 6.45); // Ajustado para nova posição
+    acFlap.rotation.x = Math.PI / 8; // Inclinação leve
+    scene.add(acFlap);
+    
+    // Abas laterais do ar condicionado (bordas)
+    const acSideGeometry = new THREE.BoxGeometry(0.08, 1.2, 0.6);
+    const acSideMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xF0F0F0,
+      roughness: 0.3,
+      metalness: 0.2
+    });
+    
+    const acSideLeft = new THREE.Mesh(acSideGeometry, acSideMaterial);
+    acSideLeft.position.set(2.71, 8.7, 6.2); // Ajustado para nova posição
+    scene.add(acSideLeft);
+    
+    const acSideRight = new THREE.Mesh(acSideGeometry, acSideMaterial);
+    acSideRight.position.set(6.29, 8.7, 6.2); // Ajustado para nova posição
+    scene.add(acSideRight);
+
+    // ===== PAREDE LATERAL DIREITA =====
+    const rightWallGeometry = new THREE.PlaneGeometry(15, 10);
+    const rightWallMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xFFF8DC, // Bege claro
+      roughness: 0.8,
+      metalness: 0.1
+    });
+    const rightWall = new THREE.Mesh(rightWallGeometry, rightWallMaterial);
+    rightWall.position.x = 7.5;
+    rightWall.position.y = 5;
+    rightWall.rotation.y = -Math.PI / 2;
+    scene.add(rightWall);
+
+    // ===== TETO =====
+    const ceilingGeometry = new THREE.PlaneGeometry(15, 15);
+    const ceilingMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0xF5F5F5,
+      roughness: 0.9,
+      side: THREE.DoubleSide
+    });
+    const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = 10;
+    scene.add(ceiling);
+
+    // ===== VENTILADOR DE TETO =====
+    // Base do ventilador
+    const fanBaseGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.3, 16);
+    const fanBaseMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x2C2C2C,
+      metalness: 0.5,
+      roughness: 0.3
+    });
+    const fanBase = new THREE.Mesh(fanBaseGeometry, fanBaseMaterial);
+    fanBase.position.set(0, 9.5, 0);
+    scene.add(fanBase);
+    
+    // Haste do ventilador
+    const fanRodGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 16);
+    const fanRod = new THREE.Mesh(fanRodGeometry, fanBaseMaterial);
+    fanRod.position.set(0, 8.85, 0);
+    scene.add(fanRod);
+    
+    // Motor do ventilador
+    const fanMotorGeometry = new THREE.CylinderGeometry(0.3, 0.25, 0.4, 16);
+    const fanMotor = new THREE.Mesh(fanMotorGeometry, fanBaseMaterial);
+    fanMotor.position.set(0, 8.3, 0);
+    scene.add(fanMotor);
+    
+    // Pás do ventilador (CORRIGIDAS DEFINITIVAMENTE)
+    const bladeMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x8B4513,
+      roughness: 0.6
+    });
+    
+    // Criar um grupo para as pás
+    const bladeGroup = new THREE.Group();
+    bladeGroup.position.set(0, 8.1, 0);
+    
+    for (let i = 0; i < 3; i++) {
+      const bladeGeometry = new THREE.BoxGeometry(1.5, 0.05, 0.25);
+      const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+      
+      // Posiciona a pá ao longo do eixo X (horizontal)
+      blade.position.x = 0.75; // Centro da pá a 0.75m do centro
+      
+      // Rotaciona o grupo inteiro para cada pá
+      const angle = (Math.PI * 2 * i) / 3;
+      const bladeContainer = new THREE.Group();
+      bladeContainer.rotation.y = angle;
+      bladeContainer.add(blade);
+      bladeGroup.add(bladeContainer);
+    }
+    
+    scene.add(bladeGroup);
+
+    // ===== QUADROS DECORATIVOS NAS PAREDES =====
+    
+    // Função para criar quadro com paisagem
+    const createPainting = (width, height) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // Céu azul gradiente
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, 300);
+      skyGradient.addColorStop(0, '#87CEEB');
+      skyGradient.addColorStop(1, '#E0F6FF');
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, 512, 300);
+      
+      // Sol
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.arc(100, 80, 40, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Montanhas
+      ctx.fillStyle = '#8B7355';
+      ctx.beginPath();
+      ctx.moveTo(0, 300);
+      ctx.lineTo(150, 150);
+      ctx.lineTo(300, 300);
+      ctx.fill();
+      
+      ctx.fillStyle = '#A0826D';
+      ctx.beginPath();
+      ctx.moveTo(200, 300);
+      ctx.lineTo(350, 180);
+      ctx.lineTo(500, 300);
+      ctx.fill();
+      
+      // Campo verde
+      ctx.fillStyle = '#90EE90';
+      ctx.fillRect(0, 300, 512, 212);
+      
+      // Árvore
+      ctx.fillStyle = '#8B4513';
+      ctx.fillRect(400, 350, 30, 80);
+      ctx.fillStyle = '#228B22';
+      ctx.beginPath();
+      ctx.arc(415, 340, 40, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Moldura
+      ctx.strokeStyle = '#8B4513';
+      ctx.lineWidth = 15;
+      ctx.strokeRect(7, 7, 498, 498);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshStandardMaterial({ map: texture });
+      const geometry = new THREE.PlaneGeometry(width, height);
+      return new THREE.Mesh(geometry, material);
+    };
+    
+    // Função para criar quadro abstrato
+    const createAbstractPainting = (width, height) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      
+      // Fundo
+      ctx.fillStyle = '#F0E68C';
+      ctx.fillRect(0, 0, 512, 512);
+      
+      // Formas abstratas coloridas
+      ctx.fillStyle = '#FF6B6B';
+      ctx.beginPath();
+      ctx.arc(150, 150, 80, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#4ECDC4';
+      ctx.fillRect(250, 100, 150, 150);
+      
+      ctx.fillStyle = '#FFE66D';
+      ctx.beginPath();
+      ctx.moveTo(100, 350);
+      ctx.lineTo(200, 450);
+      ctx.lineTo(50, 450);
+      ctx.fill();
+      
+      ctx.fillStyle = '#95E1D3';
+      ctx.beginPath();
+      ctx.arc(380, 380, 70, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Moldura
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(6, 6, 500, 500);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshStandardMaterial({ map: texture });
+      const geometry = new THREE.PlaneGeometry(width, height);
+      return new THREE.Mesh(geometry, material);
+    };
+    
+    // QUADRO 1 - Parede lateral ESQUERDA (único quadro nesta parede)
+    const painting1 = createPainting(2, 1.5);
+    painting1.position.set(-7.45, 7, -1); // Elevado de 6 para 7
+    painting1.rotation.y = Math.PI / 2; // Rotaciona para ficar de frente para o cubo
+    scene.add(painting1);
+    
+    // QUADRO 3 - Parede lateral direita
+    const painting3 = createPainting(2, 1.5);
+    painting3.position.set(7.45, 6.5, -2); // Elevado de 5 para 6.5
+    painting3.rotation.y = -Math.PI / 2;
+    scene.add(painting3);
+    
+    // QUADRO 4 - Parede lateral direita (mais ao fundo)
+    const painting4 = createAbstractPainting(1.5, 1.5);
+    painting4.position.set(7.45, 6.5, 2); // Elevado de 5 para 6.5
+    painting4.rotation.y = -Math.PI / 2;
+    scene.add(painting4);
+
+    // Variáveis para animação da câmera
+    let isAnimating = false;
+    let startPosition = new THREE.Vector3();
+    let targetPosition = new THREE.Vector3();
+    let startLookAt = new THREE.Vector3(0, 3, 0); // Foca no cubo em y=3
+    let targetLookAt = new THREE.Vector3(0, 3, 0);
+    let animationProgress = 0;
+    let animationSpeed = 0.02; // Velocidade padrão
+    let nextAction = null; // Para encadear ações
+    let autoReturnTimer = null; // Timer para retorno automático
+
+    // Função de animação
+    const animate = () => {
+      animationIdRef.current = requestAnimationFrame(animate);
+
+      if (isAnimating && animationProgress < 1) {
+        animationProgress += animationSpeed; // Usa velocidade configurável
+        
+        if (animationProgress > 1) animationProgress = 1;
+
+        // Interpolação suave (ease-in-out)
+        const t = animationProgress < 0.5
+          ? 4 * animationProgress * animationProgress * animationProgress
+          : 1 - Math.pow(-2 * animationProgress + 2, 3) / 2;
+
+        camera.position.lerpVectors(startPosition, targetPosition, t);
+        
+        // Interpolar também a direção do olhar
+        const currentLookAt = new THREE.Vector3();
+        currentLookAt.lerpVectors(startLookAt, targetLookAt, t);
+        camera.lookAt(currentLookAt);
+
+        if (animationProgress >= 1) {
+          isAnimating = false;
+          // Se há uma próxima ação agendada, executa
+          if (nextAction) {
+            const action = nextAction;
+            nextAction = null;
+            action();
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    // Função para limpar timer de retorno automático
+    const limparAutoReturn = () => {
+      if (autoReturnTimer) {
+        clearTimeout(autoReturnTimer);
+        autoReturnTimer = null;
+      }
+    };
+
+    // Função para agendar retorno automático após 5 segundos
+    const agendarRetornoAutomatico = () => {
+      limparAutoReturn(); // Limpa qualquer timer anterior
+      autoReturnTimer = setTimeout(() => {
+        window.voltarPosicaoInicial();
+      }, 5000); // 5000ms = 5 segundos
+    };
+
+    // Função auxiliar para mover câmera com velocidade customizável
+    const moverCamera = (novaPosicao, novoLookAt, velocidade = 0.02, proximaAcao = null) => {
+      startPosition.copy(camera.position);
+      targetPosition.copy(novaPosicao);
+      startLookAt.set(0, 3, 0); // Sempre começa olhando para o cubo em y=3
+      targetLookAt.copy(novoLookAt);
+      animationProgress = 0;
+      animationSpeed = velocidade; // Define a velocidade específica
+      isAnimating = true;
+      nextAction = proximaAcao;
+    };
+
+    // Função para mover câmera para vista superior (em duas etapas)
+    window.moverParaVistaSuperior = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Etapa 1: Ir para frente do cubo (vista frontal ortogonal) - velocidade normal
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      // Etapa 2: Depois subir para vista superior - VELOCIDADE MAIS LENTA (mais baixo para não passar do ventilador)
+      const posicaoSuperior = new THREE.Vector3(0, 6, 0); // Mudado de 9 para 6
+      const olharSuperior = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.02, () => {
+        moverCamera(posicaoSuperior, olharSuperior, 0.01, () => {
+          // Após chegar na vista superior, aguarda 5 segundos e retorna
+          agendarRetornoAutomatico();
+        });
+      });
+    };
+
+    // Função para mover câmera para vista lateral esquerda (em duas etapas)
+    window.moverParaVistaLateralEsquerda = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Etapa 1: Ir para frente do cubo (vista frontal ortogonal) - velocidade normal
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      // Etapa 2: Depois ir para lateral esquerda - VELOCIDADE MAIS LENTA
+      const posicaoLateralEsquerda = new THREE.Vector3(-7, 3, 0);
+      const olharLateralEsquerda = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.02, () => {
+        moverCamera(posicaoLateralEsquerda, olharLateralEsquerda, 0.01, () => {
+          // Após chegar na vista lateral, aguarda 5 segundos e retorna
+          agendarRetornoAutomatico();
+        });
+      });
+    };
+
+    // Função para mover câmera para vista lateral direita (em duas etapas)
+    window.moverParaVistaLateralDireita = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Etapa 1: Ir para frente do cubo (vista frontal ortogonal) - velocidade normal
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      // Etapa 2: Depois ir para lateral direita - VELOCIDADE MAIS LENTA
+      const posicaoLateralDireita = new THREE.Vector3(7, 3, 0);
+      const olharLateralDireita = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.02, () => {
+        moverCamera(posicaoLateralDireita, olharLateralDireita, 0.01, () => {
+          // Após chegar na vista lateral direita, aguarda 5 segundos e retorna
+          agendarRetornoAutomatico();
+        });
+      });
+    };
+
+    // Função para mover câmera para vista inferior (em duas etapas)
+    window.moverParaVistaInferior = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Etapa 1: Ir para frente do cubo (vista frontal ortogonal) - velocidade normal
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      // Etapa 2: Depois descer para vista inferior (por baixo do cubo) - VELOCIDADE MAIS LENTA
+      const posicaoInferior = new THREE.Vector3(0, -3, 0);
+      const olharInferior = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.02, () => {
+        moverCamera(posicaoInferior, olharInferior, 0.01, () => {
+          // Após chegar na vista inferior, aguarda 5 segundos e retorna
+          agendarRetornoAutomatico();
+        });
+      });
+    };
+
+    // Função para mover câmera para vista frontal (apenas uma etapa, já está na frente)
+    window.moverParaVistaFrontal = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Ir direto para frente do cubo (vista frontal ortogonal) - VELOCIDADE MAIS LENTA
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.01, () => {
+        // Após chegar na vista frontal, aguarda 5 segundos e retorna
+        agendarRetornoAutomatico();
+      });
+    };
+
+    // Função para mover câmera para vista traseira (2 etapas simples)
+    window.moverParaVistaTraseira = () => {
+      limparAutoReturn(); // Cancela qualquer retorno automático anterior
+      
+      // Etapa 1: Ir para frente do cubo (vista frontal ortogonal) - velocidade normal
+      const posicaoFrontal = new THREE.Vector3(0, 3, 4);
+      const olharFrontal = new THREE.Vector3(0, 3, 0);
+      
+      // Etapa 2: Ir diretamente para trás do cubo - VELOCIDADE MAIS LENTA
+      const posicaoTraseira = new THREE.Vector3(0, 3, -7);
+      const olharTraseira = new THREE.Vector3(0, 3, 0);
+      
+      moverCamera(posicaoFrontal, olharFrontal, 0.02, () => {
+        moverCamera(posicaoTraseira, olharTraseira, 0.01, () => {
+          // Após chegar na vista traseira, aguarda 5 segundos e retorna
+          agendarRetornoAutomatico();
+        });
+      });
+    };
+
+    // Função para voltar à posição inicial
+    window.voltarPosicaoInicial = () => {
+      limparAutoReturn(); // Cancela o retorno automático ao retornar manualmente
+      
+      const posicaoInicial = new THREE.Vector3(5, 5, 7);
+      const olharInicial = new THREE.Vector3(0, 3, 0);
+      moverCamera(posicaoInicial, olharInicial, 0.02); // Velocidade normal
+    };
+
+    // Renderizar a cena inicial
+    renderer.render(scene, camera);
+
+    // Cleanup
+    return () => {
+      if (animationIdRef.current) {
+        cancelAnimationFrame(animationIdRef.current);
+      }
+      if (autoReturnTimer) {
+        clearTimeout(autoReturnTimer);
+      }
+      geometry.dispose();
+      materials.forEach(m => m.dispose());
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-8">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-white mb-6">
+          🎲 Vistas Ortogonais de um Cubo
+        </h1>
+        
+        <div className="bg-gray-800 rounded-xl p-6 shadow-2xl inline-block">
+          <canvas ref={canvasRef} className="rounded-lg" />
+        </div>
+
+        {/* Botões de Controle */}
+        <div className="mt-6 flex gap-4 justify-center flex-wrap">
+          <button 
+            onClick={() => window.moverParaVistaFrontal()}
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Frontal
+          </button>
+          <button 
+            onClick={() => window.moverParaVistaTraseira()}
+            className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Traseira
+          </button>
+          <button 
+            onClick={() => window.moverParaVistaSuperior()}
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Superior
+          </button>
+          <button 
+            onClick={() => window.moverParaVistaInferior()}
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Inferior
+          </button>
+          <button 
+            onClick={() => window.moverParaVistaLateralEsquerda()}
+            className="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Lateral Esquerda
+          </button>
+          <button 
+            onClick={() => window.moverParaVistaLateralDireita()}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            📐 Vista Lateral Direita
+          </button>
+          <button 
+            onClick={() => window.voltarPosicaoInicial()}
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors shadow-lg"
+          >
+            🏠 Posição Inicial
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+        const { useRef, useEffect } = React;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CuboSimples />);
+    </script>
+</body>
+</html>
