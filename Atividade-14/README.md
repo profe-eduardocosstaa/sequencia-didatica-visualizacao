@@ -1,0 +1,1 @@
+Atividade de consolidação e avaliação da agilidade na rotação mental sem suporte de desenho. Utilizando a Ficha 14, os alunos responderam questões de múltipla escolha prevendo estados finais de estruturas (peças "T" e agrupamentos de cubos) após rotações. O foco recaiu sobre o rastreamento de faces específicas (feature tracking) como estratégia de validação entre distratores.
