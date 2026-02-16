@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cilindros - Animação Educacional [OFFLINE]</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #timer {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            color: white;
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 100;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+        
+        #question {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            display: none;
+            z-index: 100;
+        }
+        
+        #question p {
+            margin: 20px 0;
+            font-size: 36px;
+        }
+        
+        #symbols {
+            font-size: 80px;
+            margin-top: 40px;
+            letter-spacing: 60px;
+        }
+        
+        #geometricBackground {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 50;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        
+        .shape {
+            position: absolute;
+            opacity: 0.1;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .circle {
+            border-radius: 50%;
+        }
+        
+        .triangle {
+            width: 0;
+            height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom: 70px solid rgba(255, 255, 255, 0.15);
+            border: none;
+            background: none;
+        }
+        
+        .triangle::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -40px;
+            width: 0;
+            height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-bottom: 70px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #offlineWarning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 59, 48, 0.95);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 18px;
+            max-width: 600px;
+            display: none;
+            z-index: 200;
+        }
+
+        #offlineWarning h2 {
+            margin-top: 0;
+            font-size: 28px;
+        }
+    </style>
+</head>
+<body>
+    <div id="offlineWarning">
+        <h2>⚠️ Biblioteca não carregada</h2>
+        <p><strong>IMPORTANTE:</strong> Abra este arquivo <strong>UMA VEZ em casa com internet</strong> antes de levar para a escola.</p>
+        <p>O navegador vai guardar tudo necessário e depois funcionará offline na escola!</p>
+        <p style="margin-top: 20px; font-size: 14px;">Se já fez isso e ainda aparece esta mensagem, use o hotspot do celular.</p>
+    </div>
+    <div id="geometricBackground"></div>
+    <div id="container"></div>
+    <div id="timer">Tempo: <span id="time">10.0</span>s</div>
+    <div id="question">
+        <div>Os sólidos são iguais ou diferentes?</div>
+        <p>Levante sua placa!</p>
+        <div id="symbols">= ≠</div>
+    </div>
+    <div id="controls">
+        <button id="playBtn">▶ Reproduzir</button>
+        <button id="pauseBtn">⏸ Pausar</button>
+        <button id="loopBtn">🔁 Contínuo: OFF</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Verificar se Three.js carregou
+        if (typeof THREE === 'undefined') {
+            document.getElementById('offlineWarning').style.display = 'block';
+            document.getElementById('container').style.display = 'none';
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+        } else {
+            // Função para criar formas geométricas no fundo
+            function createGeometricBackground() {
+                const background = document.getElementById('geometricBackground');
+                const shapes = ['circle', 'square', 'triangle'];
+                const numShapes = 25;
+                
+                for (let i = 0; i < numShapes; i++) {
+                    const shapeType = shapes[Math.floor(Math.random() * shapes.length)];
+                    const shape = document.createElement('div');
+                    shape.className = `shape ${shapeType}`;
+                    
+                    shape.style.left = Math.random() * 100 + '%';
+                    shape.style.top = Math.random() * 100 + '%';
+                    
+                    const size = 30 + Math.random() * 80;
+                    if (shapeType !== 'triangle') {
+                        shape.style.width = size + 'px';
+                        shape.style.height = size + 'px';
+                    }
+                    
+                    shape.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    background.appendChild(shape);
+                }
+            }
+            
+            createGeometricBackground();
+            
+            // Configuração da cena
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2c3e50);
+            
+            // Câmera
+            const camera = new THREE.PerspectiveCamera(
+                60,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 4, 10);
+            camera.lookAt(0, 0, 0);
+            
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Iluminação
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight1.position.set(8, 12, 6);
+            directionalLight1.castShadow = true;
+            directionalLight1.shadow.mapSize.width = 2048;
+            directionalLight1.shadow.mapSize.height = 2048;
+            scene.add(directionalLight1);
+            
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight2.position.set(-6, 8, -4);
+            scene.add(directionalLight2);
+            
+            const directionalLight3 = new THREE.DirectionalLight(0xffffff, 0.3);
+            directionalLight3.position.set(0, -5, 8);
+            scene.add(directionalLight3);
+            
+            // Chão
+            const floorGeometry = new THREE.PlaneGeometry(20, 20);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x34495e,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+            
+            // Grid no chão
+            const gridHelper = new THREE.GridHelper(20, 20, 0x7f8c8d, 0x7f8c8d);
+            gridHelper.position.y = -1.99;
+            scene.add(gridHelper);
+            
+            // Material dos cilindros - ambos verdes
+            const cylinderMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x27ae60,
+                roughness: 0.5,
+                metalness: 0.3
+            });
+            
+            // Escala: vamos usar 1 unidade = 1cm para ficar proporcional
+            const radius = 1; // raio de 1 unidade (mesmo para ambos)
+            const height1 = 2.3; // altura 4.6cm (dividido por 2 porque é do centro)
+            const height2 = 2.5; // altura 5.0cm (dividido por 2 porque é do centro)
+            const segments = 128; // segmentos para maior suavidade
+            
+            // Cilindro 1 - Altura 4.6cm (esquerda)
+            const cylinderGeometry1 = new THREE.CylinderGeometry(radius, radius, height1, segments);
+            const cylinder1 = new THREE.Mesh(cylinderGeometry1, cylinderMaterial);
+            cylinder1.position.set(-1.5, -2 + height1/2, 0);
+            cylinder1.castShadow = true;
+            cylinder1.receiveShadow = true;
+            scene.add(cylinder1);
+            
+            // Criar bordas apenas para as bases circulares (topo e base)
+            function createCircleOutline(radius, segments, yPosition) {
+                const points = [];
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    points.push(new THREE.Vector3(
+                        Math.cos(angle) * radius,
+                        yPosition,
+                        Math.sin(angle) * radius
+                    ));
+                }
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+                return new THREE.Line(geometry, material);
+            }
+            
+            // Bordas das bases do cilindro 1 (pretas)
+            const topCircle1 = createCircleOutline(radius, segments, height1/2);
+            const bottomCircle1 = createCircleOutline(radius, segments, -height1/2);
+            cylinder1.add(topCircle1);
+            cylinder1.add(bottomCircle1);
+            
+            // Cilindro 2 - Altura 5.0cm (direita)
+            const cylinderGeometry2 = new THREE.CylinderGeometry(radius, radius, height2, segments);
+            const cylinder2 = new THREE.Mesh(cylinderGeometry2, cylinderMaterial);
+            cylinder2.position.set(1.5, -2 + height2/2, 0);
+            cylinder2.castShadow = true;
+            cylinder2.receiveShadow = true;
+            scene.add(cylinder2);
+            
+            // Bordas das bases do cilindro 2 (pretas)
+            const topCircle2 = createCircleOutline(radius, segments, height2/2);
+            const bottomCircle2 = createCircleOutline(radius, segments, -height2/2);
+            cylinder2.add(topCircle2);
+            cylinder2.add(bottomCircle2);
+            
+            // Labels
+            function createLabel(text, position) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 128;
+                
+                context.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                
+                context.font = 'bold 40px Arial';
+                context.fillStyle = 'black';
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+                context.fillText(text, canvas.width / 2, canvas.height / 2);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.position.copy(position);
+                sprite.scale.set(2, 1, 1);
+                
+                return sprite;
+            }
+            
+            const label1 = createLabel('Sólido A', new THREE.Vector3(-1.5, 1.5, 0));
+            const label2 = createLabel('Sólido B', new THREE.Vector3(1.5, 1.5, 0));
+            scene.add(label1);
+            scene.add(label2);
+            
+            // Controles de animação
+            let animationTime = 0;
+            let isPlaying = true;
+            let loopEnabled = false;
+            let animationDuration = 10;
+            const rotationSpeed = (Math.PI * 2) / animationDuration;
+            
+            // Parâmetros do movimento orbital da câmera
+            const cameraRadius = 10;
+            const cameraStartAngle = 0;
+            const cameraEndAngle = Math.PI * 2;
+            const cameraStartHeight = 4;
+            const cameraMaxHeight = 7; // altura reduzida para passar mais na altura dos cilindros
+            const cameraMinHeight = 1; // altura mínima para vista mais lateral
+            
+            // Salvar rotações iniciais
+            const cylinder1InitialRotation = { x: cylinder1.rotation.x, y: cylinder1.rotation.y, z: cylinder1.rotation.z };
+            const cylinder2InitialRotation = { x: cylinder2.rotation.x, y: cylinder2.rotation.y, z: cylinder2.rotation.z };
+            
+            // Botões
+            document.getElementById('playBtn').addEventListener('click', () => {
+                if (animationTime >= animationDuration) {
+                    animationTime = 0;
+                    cylinder1.rotation.y = 0;
+                    cylinder2.rotation.y = 0;
+                    
+                    document.getElementById('geometricBackground').style.display = 'none';
+                    document.getElementById('container').style.display = 'block';
+                    document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    scene.background = new THREE.Color(0x2c3e50);
+                    document.getElementById('timer').style.display = 'block';
+                    document.getElementById('pauseBtn').style.display = 'block';
+                    document.getElementById('question').style.display = 'none';
+                    document.getElementById('time').textContent = '10.0';
+                    
+                    scene.children.forEach(child => {
+                        child.visible = true;
+                    });
+                }
+                isPlaying = true;
+            });
+            
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                isPlaying = false;
+            });
+            
+            document.getElementById('loopBtn').addEventListener('click', () => {
+                loopEnabled = !loopEnabled;
+                const loopBtn = document.getElementById('loopBtn');
+                loopBtn.textContent = loopEnabled ? '🔁 Contínuo: ON' : '🔁 Contínuo: OFF';
+                loopBtn.style.background = loopEnabled ? 'rgba(76, 175, 80, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+            });
+            
+            // Animação
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                if (isPlaying && animationTime < animationDuration) {
+                    const deltaTime = 0.016;
+                    animationTime += deltaTime;
+                    
+                    const progress = animationTime / animationDuration;
+                    
+                    // Rotacionar cilindros no eixo Y
+                    cylinder1.rotation.y += rotationSpeed * deltaTime;
+                    cylinder2.rotation.y += rotationSpeed * deltaTime;
+                    
+                    // Movimento orbital da câmera
+                    const currentAngle = cameraStartAngle + (cameraEndAngle - cameraStartAngle) * progress;
+                    
+                    // Calcular altura da câmera com curva customizada
+                    // Começa em altura média, sobe, desce para vista lateral, volta a subir
+                    let heightProgress;
+                    if (progress < 0.25) {
+                        // Primeiro quarto: sobe gradualmente
+                        heightProgress = progress * 2;
+                    } else if (progress < 0.5) {
+                        // Segundo quarto: desce para vista lateral (mostra diferença de altura)
+                        heightProgress = 0.5 - (progress - 0.25) * 1.5;
+                    } else if (progress < 0.75) {
+                        // Terceiro quarto: sobe novamente
+                        heightProgress = (progress - 0.5) * 2;
+                    } else {
+                        // Último quarto: desce suavemente para posição inicial
+                        heightProgress = 0.5 - (progress - 0.75) * 1;
+                    }
+                    
+                    const currentHeight = cameraMinHeight + heightProgress * (cameraMaxHeight - cameraMinHeight);
+                    
+                    camera.position.x = Math.sin(currentAngle) * cameraRadius;
+                    camera.position.z = Math.cos(currentAngle) * cameraRadius;
+                    camera.position.y = currentHeight;
+                    camera.lookAt(0, 0, 0);
+                    
+                    const timeRemaining = Math.max(0, animationDuration - animationTime);
+                    document.getElementById('time').textContent = timeRemaining.toFixed(1);
+                    
+                    if (animationTime >= animationDuration) {
+                        if (loopEnabled) {
+                            animationTime = 0;
+                            cylinder1.rotation.y = 0;
+                            cylinder2.rotation.y = 0;
+                        } else {
+                            isPlaying = false;
+                            document.getElementById('time').textContent = '0.0';
+                            
+                            document.getElementById('geometricBackground').style.display = 'block';
+                            document.getElementById('container').style.display = 'none';
+                            document.body.style.background = '#000000';
+                            
+                            document.getElementById('timer').style.display = 'none';
+                            document.getElementById('pauseBtn').style.display = 'none';
+                            document.getElementById('question').style.display = 'block';
+                            
+                            scene.children.forEach(child => {
+                                child.visible = false;
+                            });
+                        }
+                    }
+                }
+                
+                renderer.render(scene, camera);
+            }
+            
+            // Responsividade
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            animate();
+        }
+    </script>
+</body>
+</html>
