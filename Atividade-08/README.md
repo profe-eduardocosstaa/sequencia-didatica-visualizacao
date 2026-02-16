@@ -1,0 +1,1 @@
+O objetivo foi desenvolver a competência de representação bidimensional (projeção ortogonal). Estudantes observaram animações de sólidos (Cubo, Paralelepípedo, Pirâmides) alinhando-se aos planos de projeção e desenharam as vistas solicitadas na Ficha 8. A atividade exigiu o abandono da perspectiva em favor da visão técnica (frontal, lateral, superior).
