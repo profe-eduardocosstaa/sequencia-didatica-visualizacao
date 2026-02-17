@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>O Cubo Mergulhador - Cenário Final</title>
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050505; 
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+            color: white; overflow: hidden;
+        }
+
+        #controls {
+            position: absolute; top: 20px; right: 20px; width: 340px;
+            background: rgba(20, 20, 30, 0.95); padding: 25px; border-radius: 15px;
+            border: 1px solid #444; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            max-height: 95vh; overflow-y: auto;
+        }
+
+        h2 { text-align: center; font-size: 1.2rem; margin-bottom: 20px; color: #ff7675; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #444; padding-bottom: 10px;}
+
+        .size-selector-container { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; color: #aaa;}
+        select { width: 100%; padding: 10px; background: #2d3436; border: 1px solid #555; color: white; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+
+        button { width: 100%; padding: 12px; margin-bottom: 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 1rem; color: white; }
+        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        
+        #btn-anim { background-color: #00b894; box-shadow: 0 4px 0 #00896f; font-size: 1.1rem; }
+        #btn-anim.paused { background-color: #e17055; box-shadow: 0 4px 0 #c05c45; }
+        #btn-explode { background-color: #6c5ce7; color: white; box-shadow: 0 4px 0 #4834d4; margin-top: 10px;}
+
+        .filter-area { margin-top: 20px; border-top: 1px solid #444; padding-top: 15px; }
+        .filter-title { text-align: center; margin: 0 0 10px 0; font-size: 0.8rem; color: #aaa; text-transform: uppercase; }
+        .filter-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        
+        .btn-filter { 
+            background: #2d3436; color: #b2bec3; border: 1px solid #444; font-size: 0.9rem; padding: 10px; margin-bottom: 0; text-align: left; padding-left: 20px;
+        }
+        .btn-filter:hover { background: #3d3d3d; color: white; }
+        .btn-filter.active { 
+            background: #0984e3; color: white; border-color: #0984e3; box-shadow: 0 0 10px rgba(9, 132, 227, 0.4);
+        }
+        .btn-filter.miolo { background: #e84393; color:white; margin-top: 5px;} 
+        .btn-filter.miolo.active { background: #fd79a8; }
+
+        #count-display { text-align: center; font-size: 1rem; font-weight: bold; color: #fff; margin-top: 15px; background: #000; padding: 10px; border-radius: 8px; border: 1px solid #444; }
+        .hint { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: #aaa; font-size: 0.9rem; pointer-events: none; text-align: center; text-shadow: 1px 1px 2px black;}
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div class="hint">Arraste para girar • Scroll para Zoom</div>
+
+<div id="controls">
+    <h2>Laboratório de Cubos</h2>
+    
+    <div class="size-selector-container">
+        <label for="sizeSelect">Tamanho do Cubo:</label>
+        <select id="sizeSelect" onchange="changeSize(this.value)">
+            <option value="1">1 x 1 x 1 (Simples)</option>
+            <option value="2">2 x 2 x 2 (Básico)</option>
+            <option value="3" selected>3 x 3 x 3 (Padrão)</option>
+            <option value="4">4 x 4 x 4 (Desafio)</option>
+        </select>
+    </div>
+
+    <button id="btn-anim" onclick="toggleAnimation()">▶ Iniciar Mergulho</button>
+    <button id="btn-explode" onclick="toggleExplode()">💥 Explodir / Juntar</button>
+    
+    <div class="filter-area">
+        <p class="filter-title">Filtros de Visualização:</p>
+        <div class="filter-grid">
+            <button class="btn-filter active" onclick="filterCubes('all', this)">👁️ Mostrar Todos</button>
+            <button class="btn-filter" onclick="filterCubes(3, this)">🟥 3 faces pintadas</button>
+            <button class="btn-filter" onclick="filterCubes(2, this)">🟥 2 faces pintadas</button>
+            <button class="btn-filter" onclick="filterCubes(1, this)">🟥 1 face pintada</button>
+            <button class="btn-filter miolo" onclick="filterCubes(0, this)">⬜ Nenhuma face pintada</button>
+        </div>
+    </div>
+
+    <div id="count-display">Cubos Visíveis: -</div>
+</div>
+
+<script>
+    let scene, camera, renderer, controls;
+    let mainCubeGroup, cubes = [];
+    let poolLiquid, splashParticles = [];
+
+    // Estados
+    let currentSize = 3;
+    let isExploded = false;
+    let currentFilter = 'all';
+
+    // Animação
+    let isAnimating = false;
+    let animState = 'idle';
+    const START_HEIGHT = 14; 
+    
+    // CORREÇÃO: Nível da água abaixo do chão (0)
+    const POOL_SURFACE_Y = -0.8; 
+    
+    const SUBMERGED_DEPTH = -6;
+    const DROP_SPEED = 0.3;
+    const RISE_SPEED = 0.4;
+    const PAUSE_DURATION = 5000;
+    let pauseStartTime = 0;
+    let hasSplashed = false;
+
+    // Cores
+    const COLOR_CORE = 0xeeeeee;
+    const COLOR_PAINT = 0xd63031; 
+    const COLOR_BG = 0x050505; 
+
+    init();
+    animate();
+
+    function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(COLOR_BG);
+        scene.fog = new THREE.Fog(COLOR_BG, 30, 100);
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(30, 30, 40); // Câmera um pouco mais longe para ver o cenário
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05; 
+
+        // Iluminação
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+        mainLight.position.set(10, 30, 20);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048; mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+
+        createEnvironment();
+        createWoodenSign(); // Placa adicionada
+        createCube(currentSize);
+
+        window.addEventListener('resize', onWindowResize);
+    }
+
+    // --- CENÁRIO ---
+    function createEnvironment() {
+        // Chão
+        const floorGeo = new THREE.PlaneGeometry(120, 120);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
+        
+        // Buraco da piscina (22x22)
+        const tankSize = 22;
+        const floorGroup = new THREE.Group();
+        
+        const addFloorPart = (w, h, x, z) => {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), floorMat);
+            m.rotation.x = -Math.PI/2; m.position.set(x, 0, z); m.receiveShadow = true;
+            floorGroup.add(m);
+        };
+        
+        // Construindo o chão ao redor do buraco
+        addFloorPart(120, (120-tankSize)/2, 0, tankSize/2 + (120-tankSize)/4); 
+        addFloorPart(120, (120-tankSize)/2, 0, -tankSize/2 - (120-tankSize)/4); 
+        addFloorPart((120-tankSize)/2, tankSize, -tankSize/2 - (120-tankSize)/4, 0); 
+        addFloorPart((120-tankSize)/2, tankSize, tankSize/2 + (120-tankSize)/4, 0); 
+        scene.add(floorGroup);
+
+        // Interior do Tanque
+        const tankMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, side: THREE.DoubleSide });
+        const tankInside = new THREE.Group();
+        const wallH = 7; // Profundidade
+        const floorY = -wallH;
+        
+        // Fundo
+        const tBottom = new THREE.Mesh(new THREE.PlaneGeometry(tankSize, tankSize), tankMat);
+        tBottom.rotation.x = -Math.PI/2; tBottom.position.y = floorY; tBottom.receiveShadow = true;
+        
+        // Raias no fundo
+        for(let i = -2; i <= 2; i++) {
+            if(i===0) continue; 
+            const laneLine = new THREE.Mesh(new THREE.PlaneGeometry(0.3, tankSize), new THREE.MeshBasicMaterial({color: 0x000000}));
+            laneLine.rotation.x = -Math.PI/2; laneLine.position.set(i*3, floorY + 0.01, 0);
+            tankInside.add(laneLine);
+        }
+        tankInside.add(tBottom);
+        
+        // Paredes do tanque
+        const wall1 = new THREE.Mesh(new THREE.PlaneGeometry(tankSize, wallH), tankMat);
+        wall1.position.set(0, -wallH/2, -tankSize/2); wall1.receiveShadow = true;
+        const wall2 = new THREE.Mesh(new THREE.PlaneGeometry(tankSize, wallH), tankMat);
+        wall2.rotation.y = Math.PI; wall2.position.set(0, -wallH/2, tankSize/2); wall2.receiveShadow = true;
+        const wall3 = new THREE.Mesh(new THREE.PlaneGeometry(tankSize, wallH), tankMat);
+        wall3.rotation.y = Math.PI/2; wall3.position.set(-tankSize/2, -wallH/2, 0); wall3.receiveShadow = true;
+        const wall4 = new THREE.Mesh(new THREE.PlaneGeometry(tankSize, wallH), tankMat);
+        wall4.rotation.y = -Math.PI/2; wall4.position.set(tankSize/2, -wallH/2, 0); wall4.receiveShadow = true;
+        tankInside.add(wall1, wall2, wall3, wall4);
+        
+        // Azulejos (Wireframe trick)
+        tankInside.children.forEach(mesh => {
+             if(mesh.geometry.type === 'PlaneGeometry' && mesh.material === tankMat) {
+                 const wireframe = new THREE.WireframeGeometry(mesh.geometry);
+                 const line = new THREE.LineSegments(wireframe);
+                 line.material.color.setHex(0xaaaaaa); line.material.opacity = 0.3; line.material.transparent = true;
+                 mesh.add(line);
+             }
+        });
+        scene.add(tankInside);
+
+        // Líquido (Abaixo da borda)
+        const liquidGeo = new THREE.PlaneGeometry(tankSize - 0.2, tankSize - 0.2);
+        const liquidMat = new THREE.MeshPhysicalMaterial({ 
+            color: 0xff0000, transparent: true, opacity: 0.9, 
+            metalness: 0.2, roughness: 0.1, transmission: 0.2
+        });
+        poolLiquid = new THREE.Mesh(liquidGeo, liquidMat);
+        poolLiquid.rotation.x = -Math.PI / 2;
+        poolLiquid.position.y = POOL_SURFACE_Y; 
+        scene.add(poolLiquid);
+    }
+
+    // --- PLACA DE MADEIRA ---
+    function createWoodenSign() {
+        const signGroup = new THREE.Group();
+        
+        // Poste
+        const postGeo = new THREE.BoxGeometry(0.5, 6, 0.5);
+        const woodDark = new THREE.MeshStandardMaterial({ color: 0x5D4037 });
+        const post = new THREE.Mesh(postGeo, woodDark);
+        post.position.y = 3;
+        post.castShadow = true;
+        signGroup.add(post);
+
+        // Tábua
+        const boardGeo = new THREE.BoxGeometry(8, 2.5, 0.3);
+        const woodLight = new THREE.MeshStandardMaterial({ color: 0x8D6E63 });
+        const board = new THREE.Mesh(boardGeo, woodLight);
+        board.position.y = 5;
+        board.position.z = 0.15;
+        board.castShadow = true;
+        signGroup.add(board);
+
+        // Texto
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 512; canvas.height = 160;
+        ctx.fillStyle = "#8D6E63"; ctx.fillRect(0,0,512,160); // Fundo madeira
+        ctx.font = "bold 50px Arial";
+        ctx.fillStyle = "#3E2723"; // Texto escuro
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("TANQUE DE TINTA", 256, 80);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const textMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+        const textMesh = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 2.3), textMat);
+        textMesh.position.set(0, 5, 0.32); // Levemente a frente da tábua
+        signGroup.add(textMesh);
+
+        // Posicionar no cenário (Cravada no chão, ao lado da piscina)
+        signGroup.position.set(15, 0, 0); 
+        signGroup.rotation.y = -Math.PI / 2; // Virada para a câmera inicial
+        scene.add(signGroup);
+    }
+
+    // --- CUBO ---
+    function createCube(size) {
+        if (mainCubeGroup) { scene.remove(mainCubeGroup); cubes = []; }
+        mainCubeGroup = new THREE.Group();
+        mainCubeGroup.position.y = START_HEIGHT;
+        
+        currentSize = size;
+        const cubeGeometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+        const edgesGeometry = new THREE.EdgesGeometry(cubeGeometry);
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 });
+        const offset = (size - 1) / 2;
+
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                for (let z = 0; z < size; z++) {
+                    let exposedFaces = 0;
+                    if (x === 0 || x === size - 1) exposedFaces++;
+                    if (y === 0 || y === size - 1) exposedFaces++;
+                    if (z === 0 || z === size - 1) exposedFaces++;
+                    
+                    const materials = [];
+                    for(let i=0; i<6; i++) materials.push(new THREE.MeshStandardMaterial({ color: COLOR_CORE }));
+                    
+                    const cubelet = new THREE.Mesh(cubeGeometry, materials);
+                    cubelet.castShadow = true;
+                    
+                    const posX = x - offset; const posY = y - offset; const posZ = z - offset;
+                    cubelet.position.set(posX, posY, posZ);
+                    cubelet.add(new THREE.LineSegments(edgesGeometry, edgesMaterial));
+                    
+                    cubelet.userData = { ix: x, iy: y, iz: z, orgPos: new THREE.Vector3(posX, posY, posZ), facesCount: exposedFaces, materialsRef: materials };
+                    mainCubeGroup.add(cubelet);
+                    cubes.push(cubelet);
+                }
+            }
+        }
+        scene.add(mainCubeGroup);
+        updateFilterVisibility();
+    }
+
+    function applyPaint(shouldPaint) {
+        cubes.forEach(cube => {
+            const { ix, iy, iz, materialsRef, facesCount } = cube.userData;
+            const size = currentSize;
+            if (shouldPaint && facesCount > 0) {
+                if (ix === size - 1) materialsRef[0].color.setHex(COLOR_PAINT);
+                if (ix === 0)        materialsRef[1].color.setHex(COLOR_PAINT);
+                if (iy === size - 1) materialsRef[2].color.setHex(COLOR_PAINT);
+                if (iy === 0)        materialsRef[3].color.setHex(COLOR_PAINT);
+                if (iz === size - 1) materialsRef[4].color.setHex(COLOR_PAINT);
+                if (iz === 0)        materialsRef[5].color.setHex(COLOR_PAINT);
+            } else {
+                materialsRef.forEach(m => m.color.setHex(COLOR_CORE));
+            }
+        });
+    }
+
+    function createSplash(x, z) {
+        const particleCount = 40;
+        const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+
+        for(let i=0; i<particleCount; i++) {
+            const p = new THREE.Mesh(geo, mat);
+            p.position.set(x + (Math.random()-0.5)*3, POOL_SURFACE_Y, z + (Math.random()-0.5)*3);
+            p.userData = {
+                vel: new THREE.Vector3( (Math.random()-0.5)*0.5, Math.random()*0.6 + 0.3, (Math.random()-0.5)*0.5 ),
+                life: 1.0
+            };
+            scene.add(p);
+            splashParticles.push(p);
+        }
+    }
+
+    function updateParticles() {
+        for (let i = splashParticles.length - 1; i >= 0; i--) {
+            const p = splashParticles[i];
+            p.position.add(p.userData.vel);
+            p.userData.vel.y -= 0.03; 
+            p.userData.life -= 0.03;
+            if (p.position.y < POOL_SURFACE_Y || p.userData.life <= 0) {
+                scene.remove(p); splashParticles.splice(i, 1);
+            }
+        }
+    }
+
+    // --- LÓGICA DE CONTROLE ---
+    function changeSize(newSize) {
+        resetAnimation(); createCube(parseInt(newSize));
+    }
+
+    function toggleExplode() {
+        isExploded = !isExploded;
+        const btn = document.getElementById('btn-explode');
+        btn.innerText = isExploded ? "🧩 Juntar Cubo" : "💥 Explodir / Juntar";
+        
+        // CORREÇÃO: Se clicar em explodir, o cubo VAI PARA O TOPO IMEDIATAMENTE
+        // e a animação de mergulho PAUSA.
+        if (isExploded) {
+            isAnimating = false;
+            document.getElementById('btn-anim').innerText = "▶ Iniciar Mergulho";
+            document.getElementById('btn-anim').classList.remove('paused');
+            mainCubeGroup.position.y = START_HEIGHT; // Posição de análise
+            mainCubeGroup.rotation.set(0,0,0); // Alinhado
+        }
+    }
+
+    function toggleAnimation() {
+        // Se clicar play, garante que junta primeiro
+        if (isExploded) {
+            isExploded = false;
+            document.getElementById('btn-explode').innerText = "💥 Explodir / Juntar";
+        }
+        
+        isAnimating = !isAnimating;
+        const btn = document.getElementById('btn-anim');
+        if (isAnimating) {
+            btn.innerText = "⏸ Pausar"; btn.classList.add('paused');
+            if (animState === 'idle') { animState = 'dropping'; hasSplashed = false; }
+        } else {
+            btn.innerText = "▶ Continuar"; btn.classList.remove('paused');
+        }
+    }
+
+    function resetAnimation() {
+        isAnimating = false; animState = 'idle'; 
+        mainCubeGroup.position.y = START_HEIGHT; mainCubeGroup.rotation.set(0,0,0);
+        applyPaint(false); hasSplashed = false; isExploded = false;
+        document.getElementById('btn-anim').innerText = "▶ Iniciar Mergulho";
+        document.getElementById('btn-anim').classList.remove('paused');
+        document.getElementById('btn-explode').innerText = "💥 Explodir / Juntar";
+    }
+
+    function filterCubes(count, btnElement) {
+        document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active')); 
+        btnElement.classList.add('active');
+        currentFilter = count; updateFilterVisibility();
+    }
+
+    function updateFilterVisibility() {
+        let visibleCount = 0; let totalInSize = currentSize * currentSize * currentSize;
+        cubes.forEach(cube => {
+            const faces = cube.userData.facesCount; let isVisible = false;
+            if (currentFilter === 'all') isVisible = true; else if (faces === parseInt(currentFilter)) isVisible = true;
+            cube.visible = isVisible; if(isVisible) visibleCount++;
+        });
+        document.getElementById('count-display').innerText = `Visíveis: ${visibleCount} de ${totalInSize}`;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const time = Date.now();
+
+        // Lógica de Mergulho
+        if (isAnimating && !isExploded) {
+            switch (animState) {
+                case 'dropping':
+                    mainCubeGroup.position.y -= DROP_SPEED;
+                    mainCubeGroup.rotation.x += 0.01; mainCubeGroup.rotation.z += 0.005;
+                    
+                    if (!hasSplashed && mainCubeGroup.position.y <= POOL_SURFACE_Y + 2) {
+                        createSplash(mainCubeGroup.position.x, mainCubeGroup.position.z);
+                        hasSplashed = true;
+                    }
+                    if (mainCubeGroup.position.y <= SUBMERGED_DEPTH) {
+                        applyPaint(true); animState = 'rising';
+                    }
+                    break;
+                case 'rising':
+                    mainCubeGroup.position.y += RISE_SPEED;
+                    mainCubeGroup.rotation.x -= 0.01; mainCubeGroup.rotation.z -= 0.005;
+                    if (mainCubeGroup.position.y >= START_HEIGHT) {
+                        mainCubeGroup.position.y = START_HEIGHT; mainCubeGroup.rotation.set(0,0,0); 
+                        animState = 'paused_at_top'; pauseStartTime = time;
+                    }
+                    break;
+                case 'paused_at_top':
+                    if (time - pauseStartTime > PAUSE_DURATION) {
+                        applyPaint(false); animState = 'dropping'; hasSplashed = false;
+                    }
+                    break;
+            }
+        }
+
+        // Lógica de Explosão (Expansão maior: 3.5x)
+        const expansionFactor = isExploded ? 3.5 : 1.0;
+        cubes.forEach(cube => {
+            const targetPos = cube.userData.orgPos.clone().multiplyScalar(expansionFactor);
+            cube.position.lerp(targetPos, 0.1);
+        });
+
+        updateParticles();
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+</script>
+</body>
+</html>
