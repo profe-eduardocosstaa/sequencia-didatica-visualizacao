@@ -1,1 +1,0 @@
-Focada em transformações isométricas bidimensionais com uma figura assimétrica (Letra F). Mediados por animações e utilizando a Ficha 12, os alunos realizaram esboços preditivos da posição final da figura após giros de diferentes amplitudes e sentidos. A atividade explorou a equivalência de rotações e a composição de movimentos.
