@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sequência Didática – Visualização Espacial em Geometria</title>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #1a2744;
+      --navy-light: #2a3d5e;
+      --gold: #c9a84c;
+      --gold-soft: #e8d5a0;
+      --cream: #faf8f4;
+      --text: #2c2c2c;
+      --text-light: #5a5a5a;
+      --border: #e0dcd4;
+      --white: #ffffff;
+      --eixo1: #2d6a4f;
+      --eixo2: #1d5c8a;
+      --eixo3: #8b3a62;
+      --shadow: 0 2px 12px rgba(26,39,68,0.08);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .header {
+      background: var(--navy);
+      color: var(--white);
+      padding: 3rem 1.5rem 2.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 50%, rgba(201,168,76,0.08) 0%, transparent 60%);
+    }
+
+    .header-content { position: relative; max-width: 800px; margin: 0 auto; }
+
+    .header h1 {
+      font-family: 'Crimson Pro', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.75rem;
+      color: var(--gold-soft);
+    }
+
+    .header .subtitle {
+      font-size: 1.05rem;
+      font-weight: 300;
+      line-height: 1.6;
+      opacity: 0.88;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    .header .author {
+      margin-top: 1.5rem;
+      font-size: 0.88rem;
+      opacity: 0.7;
+      font-weight: 300;
+      letter-spacing: 0.03em;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    .intro {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: 4px;
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 2.5rem;
+      font-size: 0.95rem;
+      color: var(--text-light);
+      line-height: 1.8;
+    }
+
+    .eixo-section { margin-bottom: 2.5rem; }
+
+    .eixo-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .eixo-badge {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 3px;
+      color: var(--white);
+      white-space: nowrap;
+    }
+
+    .eixo1 .eixo-badge { background: var(--eixo1); }
+    .eixo2 .eixo-badge { background: var(--eixo2); }
+    .eixo3 .eixo-badge { background: var(--eixo3); }
+
+    .eixo-title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .activity-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s;
+    }
+
+    .activity-card:hover { box-shadow: 0 3px 18px rgba(26,39,68,0.12); }
+
+    .activity-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .activity-num {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--navy-light);
+      min-width: 2rem;
+    }
+
+    .activity-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .activity-chevron {
+      color: var(--text-light);
+      transition: transform 0.25s;
+      font-size: 0.8rem;
+    }
+
+    .activity-card.open .activity-chevron { transform: rotate(180deg); }
+
+    .activity-body {
+      display: none;
+      padding: 0 1.25rem 1.25rem 3.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .activity-card.open .activity-body { display: block; }
+
+    .activity-desc {
+      font-size: 0.88rem;
+      color: var(--text-light);
+      margin: 0.75rem 0 1rem;
+      line-height: 1.7;
+    }
+
+    .file-list { list-style: none; }
+
+    .file-list li { margin-bottom: 0.4rem; }
+
+    .file-list a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--navy-light);
+      text-decoration: none;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .file-list a:hover {
+      color: var(--navy);
+      border-bottom-color: var(--gold);
+    }
+
+    .file-icon {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .icon-html { background: #e8f5e9; color: #2e7d32; }
+    .icon-docx { background: #e3f2fd; color: #1565c0; }
+    .icon-pptx { background: #fff3e0; color: #e65100; }
+
+    .footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-light);
+      border-top: 1px solid var(--border);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .footer a { color: var(--navy-light); }
+
+    @media (max-width: 600px) {
+      .header h1 { font-size: 1.5rem; }
+      .header .subtitle { font-size: 0.95rem; }
+      .activity-body { padding-left: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <h1>Sequência Didática para o Desenvolvimento da Visualização Espacial em Geometria</h1>
+    <p class="subtitle">Repositório digital dos materiais didáticos produzidos e utilizados na pesquisa de doutorado junto ao PPGECIM/ULBRA</p>
+    <p class="author">Eduardo Vinicius Costa · Orientadora: Profa. Dra. Clarissa de Assis Olgin</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="intro">
+    Este repositório reúne os 15 conjuntos de materiais que compõem a Sequência Didática (SD) aplicada a estudantes do 2º ano do Ensino Médio. Os materiais estão organizados por atividade e incluem fichas de registro, animações interativas em HTML, apresentações em PowerPoint e moldes impressos. As animações interativas abrem diretamente no navegador.
+  </div>
+
+  <!-- EIXO 1 -->
+  <div class="eixo-section eixo1">
+    <div class="eixo-header">
+      <span class="eixo-badge">Eixo 1</span>
+      <span class="eixo-title">Reconhecimento e Classificação de Sólidos</span>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">01</span>
+        <span class="activity-name">Sólidos Geométricos no Cotidiano</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Identificação e classificação de sólidos geométricos a partir de imagens do cotidiano, com registro em ficha e apoio de apresentação de slides.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-01/Ficha%20de%20registro%2001.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 01</a></li>
+          <li><a href="Atividade-01/Power%20Point%20Atividade%2001.pptx"><span class="file-icon icon-pptx">pptx</span>Power Point Atividade 01</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">02</span>
+        <span class="activity-name">Elementos e Propriedades dos Sólidos</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Exploração de faces, arestas e vértices de poliedros e corpos redondos, com registro das propriedades em ficha.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-02/Ficha%20de%20registro%2002.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 02</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">03</span>
+        <span class="activity-name">Glossário de Sólidos Geométricos</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Construção coletiva de um glossário com definições e características dos sólidos estudados.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-03/Ficha%20de%20Registro%203.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 03</a></li>
+          <li><a href="Atividade-03/Instru%C3%A7%C3%B5es%20para%20o%20Gloss%C3%A1rio.pptx"><span class="file-icon icon-pptx">pptx</span>Instruções para o Glossário</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">04</span>
+        <span class="activity-name">Cartões Enigmáticos</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Jogo de identificação de sólidos a partir de pistas sobre propriedades, articulando vocabulário geométrico e raciocínio dedutivo.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-04/Cart%C3%B5es%20Enigm%C3%A1ticos.docx"><span class="file-icon icon-docx">docx</span>Cartões Enigmáticos</a></li>
+          <li><a href="Atividade-04/Ficha%20de%20Registro%204.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 04</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">05</span>
+        <span class="activity-name">Planificações e Montagem de Sólidos</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Trabalho com planificações de sólidos geométricos, distribuído em oito fichas progressivas (5A a 5H) e apoiado por adesivos de identificação.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-05/Adesivos%20da%20Atividade%2005.docx"><span class="file-icon icon-docx">docx</span>Adesivos da Atividade 05</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205A.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5A</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205B.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5B</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205C.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5C</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205D.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5D</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205E.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5E</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205F.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5F</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205G.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5G</a></li>
+          <li><a href="Atividade-05/Ficha%20de%20Registro%205H.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 5H</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- EIXO 2 -->
+  <div class="eixo-section eixo2">
+    <div class="eixo-header">
+      <span class="eixo-badge">Eixo 2</span>
+      <span class="eixo-title">Representação Ortogonal com Suporte</span>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">06</span>
+        <span class="activity-name">Perspectiva Isométrica com Animações Digitais</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Exploração de perspectiva isométrica por meio de 12 animações interativas, com registro em ficha e apoio de placas recortáveis.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2001.html"><span class="file-icon icon-html">html</span>Animação 01</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2002.html"><span class="file-icon icon-html">html</span>Animação 02</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2003.html"><span class="file-icon icon-html">html</span>Animação 03</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2004.html"><span class="file-icon icon-html">html</span>Animação 04</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2005.html"><span class="file-icon icon-html">html</span>Animação 05</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2006.html"><span class="file-icon icon-html">html</span>Animação 06</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2007.html"><span class="file-icon icon-html">html</span>Animação 07</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2008.html"><span class="file-icon icon-html">html</span>Animação 08</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2009.html"><span class="file-icon icon-html">html</span>Animação 09</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2010.html"><span class="file-icon icon-html">html</span>Animação 10</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2011.html"><span class="file-icon icon-html">html</span>Animação 11</a></li>
+          <li><a href="Atividade-06/Anima%C3%A7%C3%A3o%2012.html"><span class="file-icon icon-html">html</span>Animação 12</a></li>
+          <li><a href="Atividade-06/Ficha%20de%20Registro%2006.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 06</a></li>
+          <li><a href="Atividade-06/Molde%20das%20Placas.docx"><span class="file-icon icon-docx">docx</span>Molde das Placas</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">07</span>
+        <span class="activity-name">Planificação com Animações e Moldes</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Articulação entre animações interativas e moldes impressos para explorar a relação entre planificação e sólido tridimensional.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-07/Anima%C3%A7%C3%A3o%2013.html"><span class="file-icon icon-html">html</span>Animação 13</a></li>
+          <li><a href="Atividade-07/Anima%C3%A7%C3%A3o%2014.html"><span class="file-icon icon-html">html</span>Animação 14</a></li>
+          <li><a href="Atividade-07/Ficha%20de%20Registro%2007.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 07</a></li>
+          <li><a href="Atividade-07/Molde%201.docx"><span class="file-icon icon-docx">docx</span>Molde 1</a></li>
+          <li><a href="Atividade-07/Molde%202.docx"><span class="file-icon icon-docx">docx</span>Molde 2</a></li>
+          <li><a href="Atividade-07/Molde%203.docx"><span class="file-icon icon-docx">docx</span>Molde 3</a></li>
+          <li><a href="Atividade-07/Molde%204.docx"><span class="file-icon icon-docx">docx</span>Molde 4</a></li>
+          <li><a href="Atividade-07/Molde%205.docx"><span class="file-icon icon-docx">docx</span>Molde 5</a></li>
+          <li><a href="Atividade-07/Molde%206.docx"><span class="file-icon icon-docx">docx</span>Molde 6</a></li>
+          <li><a href="Atividade-07/Molde%207.docx"><span class="file-icon icon-docx">docx</span>Molde 7</a></li>
+          <li><a href="Atividade-07/Molde%208.docx"><span class="file-icon icon-docx">docx</span>Molde 8</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">08</span>
+        <span class="activity-name">Vistas Ortogonais</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Introdução às vistas ortogonais por meio de sete animações (15 a 21) com cenário virtual, contemplando cubo, paralelepípedo, pirâmides, pilha de cubos, cone e cilindro.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2015.html"><span class="file-icon icon-html">html</span>Animação 15</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2016.html"><span class="file-icon icon-html">html</span>Animação 16</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2017.html"><span class="file-icon icon-html">html</span>Animação 17</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2018.html"><span class="file-icon icon-html">html</span>Animação 18</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2019.html"><span class="file-icon icon-html">html</span>Animação 19</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2020.html"><span class="file-icon icon-html">html</span>Animação 20</a></li>
+          <li><a href="Atividade-08/Anima%C3%A7%C3%A3o%2021.html"><span class="file-icon icon-html">html</span>Animação 21</a></li>
+          <li><a href="Atividade-08/Ficha%20de%20Registro%2008.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 08</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">09</span>
+        <span class="activity-name">Construção e Representação de Estruturas Tridimensionais</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Construção de estruturas com blocos de isopor e representação das seis vistas ortogonais, articulando manipulação concreta e registro gráfico.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-09/Ficha%20de%20Registro%2009.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 09</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">10</span>
+        <span class="activity-name">Interpretação de Modelos e Validação pelos Pares</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Troca de estruturas entre grupos para representação ortogonal de um modelo externo, ampliando a demanda interpretativa e a validação cruzada.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-10/Ficha%20de%20Registro%2010.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 10</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- EIXO 3 -->
+  <div class="eixo-section eixo3">
+    <div class="eixo-header">
+      <span class="eixo-badge">Eixo 3</span>
+      <span class="eixo-title">Rotação Mental e Representação sem Suporte</span>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">11</span>
+        <span class="activity-name">Rotações no Plano</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Introdução às rotações isométricas bidimensionais com a letra F, articulando previsão, verificação coletiva com animação e revisão do traçado em campos duplos (esboço inicial e esboço após correção).</p>
+        <ul class="file-list">
+          <li><a href="Atividade%2011/Anima%C3%A7%C3%A3o%2022.html"><span class="file-icon icon-html">html</span>Animação 22</a></li>
+          <li><a href="Atividade%2011/Anima%C3%A7%C3%A3o%2023.html"><span class="file-icon icon-html">html</span>Animação 23</a></li>
+          <li><a href="Atividade%2011/Ficha%20de%20Registro%2011.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 11</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">12</span>
+        <span class="activity-name">Rotações Tridimensionais e Previsão de Vistas</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Coordenação entre rotação mental 3D e representação ortogonal, com sólidos compostos (cubo com faces marcadas, sólido em L e escada) e previsão de vistas após giros nos eixos X, Y e Z.</p>
+        <ul class="file-list">
+          <li><a href="Atividade%2012/Anima%C3%A7%C3%A3o%2024.html"><span class="file-icon icon-html">html</span>Animação 24</a></li>
+          <li><a href="Atividade%2012/Anima%C3%A7%C3%A3o%2025.html"><span class="file-icon icon-html">html</span>Animação 25</a></li>
+          <li><a href="Atividade%2012/Anima%C3%A7%C3%A3o%2026.html"><span class="file-icon icon-html">html</span>Animação 26</a></li>
+          <li><a href="Atividade%2012/Ficha%20de%20Registro%2012A.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 12A</a></li>
+          <li><a href="Atividade%2012/Ficha%20de%20Registro%2012B.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 12B</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">13</span>
+        <span class="activity-name">Vistas Ortogonais sem Suporte Concreto ou Digital</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Conversão de imagens estáticas projetadas em slides para vistas ortogonais, sem manipulação física ou animação digital. Seis itens progressivos com registro metacognitivo padronizado.</p>
+        <ul class="file-list">
+          <li><a href="Atividade%2013/Ficha%20de%20Registro%2013A.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 13A</a></li>
+          <li><a href="Atividade%2013/Ficha%20de%20Registro%2013B.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 13B</a></li>
+          <li><a href="Atividade%2013/Ficha%20de%20Registro%2013C.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 13C</a></li>
+          <li><a href="Atividade%2013/Power%20Point%20Atividade%2013.pptx"><span class="file-icon icon-pptx">pptx</span>Power Point Atividade 13</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">14</span>
+        <span class="activity-name">Rotação Mental – Reconhecimento por Alternativas</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Consolidação das rotações com decisão por reconhecimento, exigindo antecipação da vista resultante sem apoio de traçado intermediário. Peças em T e com face destacada em vermelho.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-14/Anima%C3%A7%C3%A3o%2027.html"><span class="file-icon icon-html">html</span>Animação 27</a></li>
+          <li><a href="Atividade-14/Anima%C3%A7%C3%A3o%2028.html"><span class="file-icon icon-html">html</span>Animação 28</a></li>
+          <li><a href="Atividade-14/Ficha%20de%20Registro%2014.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 14</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <button class="activity-toggle" onclick="toggle(this)">
+        <span class="activity-num">15</span>
+        <span class="activity-name">O Cubo Pintado – Visualização Interna e Generalização</span>
+        <span class="activity-chevron">▼</span>
+      </button>
+      <div class="activity-body">
+        <p class="activity-desc">Tarefa de fechamento da SD, integrando visualização interna, coordenação entre exterior e interior do sólido e passagem de casos particulares para generalização, por meio da animação do cubo mergulhado em tinta.</p>
+        <ul class="file-list">
+          <li><a href="Atividade-15/Anima%C3%A7%C3%A3o%2029.html"><span class="file-icon icon-html">html</span>Animação 29</a></li>
+          <li><a href="Atividade-15/Ficha%20de%20Registro%2015.docx"><span class="file-icon icon-docx">docx</span>Ficha de Registro 15</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Materiais produzidos no âmbito da pesquisa de doutorado vinculada ao PPGECIM/ULBRA, Canoas, RS.<br>
+  Contato: <a href="mailto:professoreduardo96@gmail.com">professoreduardo96@gmail.com</a>
+</div>
+
+<script>
+function toggle(btn) {
+  const card = btn.closest('.activity-card');
+  card.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>
