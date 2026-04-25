@@ -24,6 +24,8 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+
     body {
       font-family: 'Source Sans 3', sans-serif;
       background: var(--cream);
@@ -153,10 +155,11 @@
 
     .activity-num {
       font-family: 'Crimson Pro', serif;
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--navy-light);
-      min-width: 2rem;
+      min-width: 5.5rem;
+      letter-spacing: 0.01em;
     }
 
     .activity-name {
@@ -236,10 +239,202 @@
 
     .footer a { color: var(--navy-light); }
 
+    /* QUICK NAV — atalhos no topo */
+    .quick-nav {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 0;
+    }
+
+    .quick-nav-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+    }
+
+    .quick-nav-btn {
+      display: block;
+      padding: 0.85rem 1rem;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: all 0.2s ease;
+      font-family: 'Source Sans 3', sans-serif;
+    }
+
+    .quick-nav-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 18px rgba(26,39,68,0.12);
+      border-color: var(--gold);
+    }
+
+    .qn-tag {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    .qn-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--navy);
+      line-height: 1.3;
+    }
+
+    .quick-nav-btn[data-eixo="1"] .qn-tag { color: var(--eixo1); }
+    .quick-nav-btn[data-eixo="2"] .qn-tag { color: var(--eixo2); }
+    .quick-nav-btn[data-eixo="3"] .qn-tag { color: var(--eixo3); }
+
+    /* SEÇÃO DE ANIMAÇÕES */
+    .anim-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 2px solid var(--border);
+    }
+
+    .anim-intro {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: 4px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      color: var(--text-light);
+      line-height: 1.75;
+    }
+
+    .anim-intro a {
+      color: var(--navy);
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid var(--gold);
+      cursor: pointer;
+    }
+
+    .anim-intro a:hover { color: var(--navy-light); }
+
+    .anim-details {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .anim-summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .anim-summary::-webkit-details-marker { display: none; }
+    .anim-summary:hover { background: #f6f3ec; }
+
+    .anim-summary-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .anim-summary-tag {
+      font-family: 'Crimson Pro', serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 3px;
+      color: var(--white);
+      background: var(--navy);
+      white-space: nowrap;
+    }
+
+    .anim-summary-title {
+      font-family: 'Crimson Pro', serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .anim-summary-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .anim-count {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      font-style: italic;
+    }
+
+    .anim-chevron {
+      color: var(--text-light);
+      font-size: 0.75rem;
+      transition: transform 0.25s;
+    }
+
+    .anim-details[open] .anim-chevron { transform: rotate(180deg); }
+
+    .anim-grid {
+      padding: 0.5rem 1.25rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 0.4rem 1rem;
+      background: #fdfcf8;
+    }
+
+    .anim-card {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0;
+      font-size: 0.9rem;
+      color: var(--navy-light);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .anim-card:hover {
+      color: var(--navy);
+      border-bottom-color: var(--gold);
+    }
+
+    .anim-card-num {
+      font-family: 'Crimson Pro', serif;
+      font-weight: 700;
+      color: var(--gold);
+      min-width: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 700px) {
+      .quick-nav-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
     @media (max-width: 600px) {
       .header h1 { font-size: 1.5rem; }
       .header .subtitle { font-size: 0.95rem; }
       .activity-body { padding-left: 1.25rem; }
+      .activity-num { min-width: 4.5rem; font-size: 0.9rem; }
+      .anim-summary { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -253,6 +448,27 @@
   </div>
 </div>
 
+<nav class="quick-nav" aria-label="Atalhos da página">
+  <div class="quick-nav-grid">
+    <a href="#eixo-1" class="quick-nav-btn" data-eixo="1">
+      <span class="qn-tag">Eixo 1</span>
+      <span class="qn-label">Atividades do Eixo 1</span>
+    </a>
+    <a href="#eixo-2" class="quick-nav-btn" data-eixo="2">
+      <span class="qn-tag">Eixo 2</span>
+      <span class="qn-label">Atividades do Eixo 2</span>
+    </a>
+    <a href="#eixo-3" class="quick-nav-btn" data-eixo="3">
+      <span class="qn-tag">Eixo 3</span>
+      <span class="qn-label">Atividades do Eixo 3</span>
+    </a>
+    <a href="#animacoes" class="quick-nav-btn">
+      <span class="qn-tag">Recursos</span>
+      <span class="qn-label">Animações Digitais Interativas</span>
+    </a>
+  </div>
+</nav>
+
 <div class="container">
 
   <div class="intro">
@@ -260,7 +476,7 @@
   </div>
 
   <!-- EIXO 1 -->
-  <div class="eixo-section eixo1">
+  <div class="eixo-section eixo1" id="eixo-1">
     <div class="eixo-header">
       <span class="eixo-badge">Eixo 1</span>
       <span class="eixo-title">Reconhecimento e Classificação de Sólidos</span>
@@ -268,7 +484,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">01</span>
+        <span class="activity-num">Atividade 1</span>
         <span class="activity-name">Sólidos Geométricos no Cotidiano</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -283,7 +499,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">02</span>
+        <span class="activity-num">Atividade 2</span>
         <span class="activity-name">Elementos e Propriedades dos Sólidos</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -297,7 +513,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">03</span>
+        <span class="activity-num">Atividade 3</span>
         <span class="activity-name">Glossário de Sólidos Geométricos</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -312,7 +528,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">04</span>
+        <span class="activity-num">Atividade 4</span>
         <span class="activity-name">Cartões Enigmáticos</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -327,7 +543,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">05</span>
+        <span class="activity-num">Atividade 5</span>
         <span class="activity-name">Planificações e Montagem de Sólidos</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -349,7 +565,7 @@
   </div>
 
   <!-- EIXO 2 -->
-  <div class="eixo-section eixo2">
+  <div class="eixo-section eixo2" id="eixo-2">
     <div class="eixo-header">
       <span class="eixo-badge">Eixo 2</span>
       <span class="eixo-title">Representação Ortogonal com Suporte</span>
@@ -357,7 +573,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">06</span>
+        <span class="activity-num">Atividade 6</span>
         <span class="activity-name">Perspectiva Isométrica com Animações Digitais</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -384,7 +600,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">07</span>
+        <span class="activity-num">Atividade 7</span>
         <span class="activity-name">Planificação com Animações e Moldes</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -408,7 +624,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">08</span>
+        <span class="activity-num">Atividade 8</span>
         <span class="activity-name">Vistas Ortogonais</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -429,7 +645,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">09</span>
+        <span class="activity-num">Atividade 9</span>
         <span class="activity-name">Construção e Representação de Estruturas Tridimensionais</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -443,7 +659,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">10</span>
+        <span class="activity-num">Atividade 10</span>
         <span class="activity-name">Interpretação de Modelos e Validação pelos Pares</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -457,7 +673,7 @@
   </div>
 
   <!-- EIXO 3 -->
-  <div class="eixo-section eixo3">
+  <div class="eixo-section eixo3" id="eixo-3">
     <div class="eixo-header">
       <span class="eixo-badge">Eixo 3</span>
       <span class="eixo-title">Rotação Mental e Representação sem Suporte</span>
@@ -465,7 +681,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">11</span>
+        <span class="activity-num">Atividade 11</span>
         <span class="activity-name">Rotações no Plano</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -481,7 +697,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">12</span>
+        <span class="activity-num">Atividade 12</span>
         <span class="activity-name">Rotações Tridimensionais e Previsão de Vistas</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -499,7 +715,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">13</span>
+        <span class="activity-num">Atividade 13</span>
         <span class="activity-name">Vistas Ortogonais sem Suporte Concreto ou Digital</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -516,7 +732,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">14</span>
+        <span class="activity-num">Atividade 14</span>
         <span class="activity-name">Rotação Mental – Reconhecimento por Alternativas</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -532,7 +748,7 @@
 
     <div class="activity-card">
       <button class="activity-toggle" onclick="toggle(this)">
-        <span class="activity-num">15</span>
+        <span class="activity-num">Atividade 15</span>
         <span class="activity-name">O Cubo Pintado – Visualização Interna e Generalização</span>
         <span class="activity-chevron">▼</span>
       </button>
@@ -546,11 +762,60 @@
     </div>
   </div>
 
+  <!-- ANIMAÇÕES DIGITAIS INTERATIVAS -->
+  <section class="anim-section" id="animacoes">
+    <p class="anim-intro">As animações digitais interativas estão disponíveis dentro das pastas das atividades em que foram utilizadas. Caso você tenha interesse em analisar somente as animações separadamente, <a onclick="document.getElementById('anim-toggle').setAttribute('open',''); document.getElementById('anim-toggle').scrollIntoView({behavior:'smooth', block:'start'});">clique aqui</a> ou expanda a barra abaixo.</p>
+
+    <details class="anim-details" id="anim-toggle">
+      <summary class="anim-summary">
+        <span class="anim-summary-left">
+          <span class="anim-summary-tag">Recursos</span>
+          <span class="anim-summary-title">Animações Digitais Interativas</span>
+        </span>
+        <span class="anim-summary-right">
+          <span class="anim-count">29 animações</span>
+          <span class="anim-chevron">▼</span>
+        </span>
+      </summary>
+      <div class="anim-grid">
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2001.html"><span class="anim-card-num">01</span>Animação Digital Interativa 1</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2002.html"><span class="anim-card-num">02</span>Animação Digital Interativa 2</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2003.html"><span class="anim-card-num">03</span>Animação Digital Interativa 3</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2004.html"><span class="anim-card-num">04</span>Animação Digital Interativa 4</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2005.html"><span class="anim-card-num">05</span>Animação Digital Interativa 5</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2006.html"><span class="anim-card-num">06</span>Animação Digital Interativa 6</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2007.html"><span class="anim-card-num">07</span>Animação Digital Interativa 7</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2008.html"><span class="anim-card-num">08</span>Animação Digital Interativa 8</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2009.html"><span class="anim-card-num">09</span>Animação Digital Interativa 9</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2010.html"><span class="anim-card-num">10</span>Animação Digital Interativa 10</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2011.html"><span class="anim-card-num">11</span>Animação Digital Interativa 11</a>
+        <a class="anim-card" href="Atividade-06/Anima%C3%A7%C3%A3o%2012.html"><span class="anim-card-num">12</span>Animação Digital Interativa 12</a>
+        <a class="anim-card" href="Atividade-07/Anima%C3%A7%C3%A3o%2013.html"><span class="anim-card-num">13</span>Animação Digital Interativa 13</a>
+        <a class="anim-card" href="Atividade-07/Anima%C3%A7%C3%A3o%2014.html"><span class="anim-card-num">14</span>Animação Digital Interativa 14</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2015.html"><span class="anim-card-num">15</span>Animação Digital Interativa 15</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2016.html"><span class="anim-card-num">16</span>Animação Digital Interativa 16</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2017.html"><span class="anim-card-num">17</span>Animação Digital Interativa 17</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2018.html"><span class="anim-card-num">18</span>Animação Digital Interativa 18</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2019.html"><span class="anim-card-num">19</span>Animação Digital Interativa 19</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2020.html"><span class="anim-card-num">20</span>Animação Digital Interativa 20</a>
+        <a class="anim-card" href="Atividade-08/Anima%C3%A7%C3%A3o%2021.html"><span class="anim-card-num">21</span>Animação Digital Interativa 21</a>
+        <a class="anim-card" href="Atividade%2011/Anima%C3%A7%C3%A3o%2022.html"><span class="anim-card-num">22</span>Animação Digital Interativa 22</a>
+        <a class="anim-card" href="Atividade%2011/Anima%C3%A7%C3%A3o%2023.html"><span class="anim-card-num">23</span>Animação Digital Interativa 23</a>
+        <a class="anim-card" href="Atividade%2012/Anima%C3%A7%C3%A3o%2024.html"><span class="anim-card-num">24</span>Animação Digital Interativa 24</a>
+        <a class="anim-card" href="Atividade%2012/Anima%C3%A7%C3%A3o%2025.html"><span class="anim-card-num">25</span>Animação Digital Interativa 25</a>
+        <a class="anim-card" href="Atividade%2012/Anima%C3%A7%C3%A3o%2026.html"><span class="anim-card-num">26</span>Animação Digital Interativa 26</a>
+        <a class="anim-card" href="Atividade-14/Anima%C3%A7%C3%A3o%2027.html"><span class="anim-card-num">27</span>Animação Digital Interativa 27</a>
+        <a class="anim-card" href="Atividade-14/Anima%C3%A7%C3%A3o%2028.html"><span class="anim-card-num">28</span>Animação Digital Interativa 28</a>
+        <a class="anim-card" href="Atividade-15/Anima%C3%A7%C3%A3o%2029.html"><span class="anim-card-num">29</span>Animação Digital Interativa 29</a>
+      </div>
+    </details>
+  </section>
+
 </div>
 
 <div class="footer">
   Materiais produzidos no âmbito da pesquisa de doutorado vinculada ao PPGECIM/ULBRA, Canoas, RS.<br>
-  Contato: <a href="mailto:professoreduardo96@gmail.com">professoreduardo96@gmail.com</a>
+  Contato: <a href="mailto:eduardo.costa@edu.ulbra.br">eduardo.costa@edu.ulbra.br</a>
 </div>
 
 <script>
